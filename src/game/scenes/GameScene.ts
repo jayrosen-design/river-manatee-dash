@@ -208,55 +208,43 @@ export class GameScene extends Phaser.Scene {
   private drawRopes() {
     this.ropeGfx.clear();
     const g = this.ropeGfx;
-    // Draw connected rope strands between adjacent rope tiles + buoys at each
-    g.lineStyle(4, COLORS.ropeShadow, 1);
+    // 1) Filled tan rope block per rope tile (clear wall readability)
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         if (level01.grid[r][c] !== "rope") continue;
-        const x = c * TILE + TILE / 2;
-        const y = r * TILE + TILE / 2 + this.mazeOffsetY;
-        // connect right
-        if (c + 1 < COLS && level01.grid[r][c + 1] === "rope") {
-          g.lineBetween(x, y, x + TILE, y);
-        }
-        // connect down
-        if (r + 1 < ROWS && level01.grid[r + 1][c] === "rope") {
-          g.lineBetween(x, y, x, y + TILE);
-        }
+        const x = c * TILE;
+        const y = r * TILE + this.mazeOffsetY;
+        g.fillStyle(COLORS.ropeShadow, 1);
+        g.fillRoundedRect(x + 2, y + 2, TILE - 4, TILE - 4, 6);
+        g.fillStyle(COLORS.rope, 1);
+        g.fillRoundedRect(x + 3, y + 3, TILE - 6, TILE - 8, 5);
+        // rope diagonal strands
+        g.lineStyle(2, COLORS.ropeShadow, 0.7);
+        g.lineBetween(x + 4, y + 6, x + TILE - 4, y + TILE - 6);
+        g.lineBetween(x + 4, y + TILE - 6, x + TILE - 4, y + 6);
       }
     }
-    g.lineStyle(2, COLORS.rope, 1);
+    // 2) Buoys at exposed edges (water-adjacent rope tiles)
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         if (level01.grid[r][c] !== "rope") continue;
+        const adjWater =
+          (r > 0 && level01.grid[r - 1][c] !== "rope") ||
+          (r < ROWS - 1 && level01.grid[r + 1][c] !== "rope") ||
+          (c > 0 && level01.grid[r][c - 1] !== "rope") ||
+          (c < COLS - 1 && level01.grid[r][c + 1] !== "rope");
+        if (!adjWater) continue;
+        if ((c + r) % 2 !== 0) continue;
         const x = c * TILE + TILE / 2;
         const y = r * TILE + TILE / 2 + this.mazeOffsetY;
-        if (c + 1 < COLS && level01.grid[r][c + 1] === "rope") {
-          g.lineBetween(x, y, x + TILE, y);
-        }
-        if (r + 1 < ROWS && level01.grid[r + 1][c] === "rope") {
-          g.lineBetween(x, y, x, y + TILE);
-        }
-      }
-    }
-    // Buoys
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        if (level01.grid[r][c] !== "rope") continue;
-        // Only draw a buoy at "corners" or every other tile to reduce clutter
-        const x = c * TILE + TILE / 2;
-        const y = r * TILE + TILE / 2 + this.mazeOffsetY;
-        const isBorder =
-          r === 0 || c === 0 || r === ROWS - 1 || c === COLS - 1;
-        const everyN = isBorder ? 3 : 2;
-        if ((c + r) % everyN !== 0) continue;
         g.fillStyle(COLORS.buoy, 1);
-        g.fillCircle(x, y, 5);
-        g.lineStyle(1.5, 0x222222, 1);
-        g.strokeCircle(x, y, 5);
+        g.fillCircle(x, y, 4);
+        g.lineStyle(1.2, 0x222222, 1);
+        g.strokeCircle(x, y, 4);
       }
     }
   }
+
 
   // ----- Spawning -----
 
