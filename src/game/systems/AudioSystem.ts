@@ -35,6 +35,31 @@ export class AudioSystem {
     if (this.master) this.master.gain.value = m ? 0 : 0.6;
   }
 
+  /** Pause all sound (e.g. game paused / hidden). */
+  suspend() {
+    void this.ctx?.suspend().catch(() => {});
+  }
+
+  /** Resume sound after a suspend. */
+  resume() {
+    void this.ctx?.resume().catch(() => {});
+  }
+
+  /** Fully tear down audio: stops ambience and closes the context. */
+  dispose() {
+    this.ambienceNode?.stop();
+    this.ambienceNode = null;
+    const ctx = this.ctx;
+    this.ctx = null;
+    this.master = null;
+    this.unlocked = false;
+    try {
+      void ctx?.close();
+    } catch {
+      /* ignore */
+    }
+  }
+
   unlock() {
     if (this.unlocked || typeof window === "undefined") return;
     try {
