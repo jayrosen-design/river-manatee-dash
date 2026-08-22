@@ -129,6 +129,7 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     this.audio.unlock();
+    this.audio.resume();
     this.reducedMotion =
       typeof window !== "undefined" &&
       window.localStorage.getItem("riverManatee.reducedMotion") === "1";
@@ -777,6 +778,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private restartLevel() {
+    this.audio.resume();
     this.scene.restart();
   }
 }
