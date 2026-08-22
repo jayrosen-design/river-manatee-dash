@@ -1,3 +1,5 @@
+import { FEAST_MOVE_LIMIT, FOOD_SCORE, JELLY_PENALTY } from "@/game/constants";
+
 interface Props {
   onClose: () => void;
 }
@@ -5,43 +7,49 @@ interface Props {
 export function HowToPlay({ onClose }: Props) {
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-river-navy/80 backdrop-blur-sm p-4"
       role="dialog"
       aria-modal="true"
       aria-label="How to play"
     >
-      <div className="max-w-md w-full rounded-2xl bg-slate-900 text-white shadow-2xl border border-white/10 p-6">
-        <h2 className="text-2xl font-black text-emerald-300 mb-3">
-          How to Play
-        </h2>
+      <div className="max-w-md w-full rounded-3xl bg-river-navy text-river-foam shadow-2xl border-2 border-river-aqua/35 p-6">
+        <h2 className="text-3xl font-black title-splash mb-4">How to Play</h2>
         <ul className="space-y-2 text-sm leading-relaxed">
           <li>
             🕹️ <b>Move</b> with Arrow Keys or WASD. On mobile, swipe or use the
             on-screen pad.
           </li>
           <li>
-            🥬 <b>Collect every lettuce</b> floating in the river to finish the
-            level.
+            🥬 <b>Clear the river</b> of every food item to finish the level.
           </li>
           <li>
-            🚤 <b>Avoid boats</b> patrolling the corridors and the spinning
-            propeller hazard.
+            🍽 <b>Food values:</b> lettuce {FOOD_SCORE.lettuce}, seaweed{" "}
+            {FOOD_SCORE.seaweed}, shrimp {FOOD_SCORE.shrimp}, fish{" "}
+            {FOOD_SCORE.fish}.
           </li>
           <li>
-            ❤️ You have <b>three lives</b>. After a hit you briefly flash and
+            🚤 <b>Avoid boats</b> and the spinning propeller — each costs a
+            manatee.
+          </li>
+          <li>
+            🪼 <b>Jellyfish sting</b> for −{JELLY_PENALTY} points, so weave
+            around them.
+          </li>
+          <li>
+            🩶 You have <b>three manatees</b>. After a hit you briefly flash and
             cannot be hit again.
           </li>
           <li>
             ⏸ Press <b>Esc</b> or the pause button to pause.
           </li>
         </ul>
-        <p className="mt-4 text-xs text-sky-200/80 italic">
-          Slow down in manatee zones. Responsible boating helps protect Florida
-          wildlife.
+        <p className="mt-4 text-xs text-river-aqua/85 italic">
+          Coming soon: Manatee Feast Mode — score as high as you can in{" "}
+          {FEAST_MOVE_LIMIT} moves, just like the original paper game.
         </p>
         <button
           onClick={onClose}
-          className="mt-5 w-full px-4 py-2 rounded-lg bg-emerald-400 text-emerald-950 font-bold hover:bg-emerald-300 focus:outline-none focus:ring-4 focus:ring-emerald-300/50"
+          className="press-pop mt-5 w-full px-4 py-2.5 rounded-xl bg-river-lettuce text-river-navy font-black shadow-[0_6px_0_var(--river-seaweed)] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[0_3px_0_var(--river-seaweed)] focus:outline-none focus:ring-4 focus:ring-river-lettuce/40"
           autoFocus
         >
           Got it

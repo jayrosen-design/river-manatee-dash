@@ -9,24 +9,24 @@ export const GAME_W = MAZE_W;       // 800
 export const GAME_H = MAZE_H + HUD_H; // 600
 
 export const COLORS = {
-  water: 0x2a8aa8,
-  waterDeep: 0x176079,
-  waterLight: 0x3fb3c9,
-  rope: 0xc9a86a,
-  ropeShadow: 0x8b6b3a,
-  buoy: 0xe85a3a,
-  lettuce: 0x6fd14a,
+  water: 0x118ab2,
+  waterDeep: 0x073b4c,
+  waterLight: 0x48cae4,
+  rope: 0xd6a85a,
+  ropeShadow: 0x9c7231,
+  buoy: 0xef476f,
+  lettuce: 0x7ed957,
   lettuceDark: 0x3f8a2a,
-  manatee: 0x9aa1ac,
-  manateeDark: 0x6b727c,
-  manateeBelly: 0xc4c9d0,
-  hazard: 0xff7a1a,
-  hazardWarn: 0xff3a3a,
-  propeller: 0x444a55,
-  hudBg: 0x0e1f3a,
+  manatee: 0xa8b8bd,
+  manateeDark: 0x76888f,
+  manateeBelly: 0xd6e2e6,
+  hazard: 0xff8c42,
+  hazardWarn: 0xef476f,
+  propeller: 0x5b6670,
+  hudBg: 0x102a43,
   hudText: 0xffffff,
-  debris: 0x6b4a2a,
-  boatHull: [0xd64545, 0x3fa9d6, 0xf2c14e],
+  debris: 0x8b5a2b,
+  boatHull: [0xe23c47, 0x2f9ad6, 0xf5c542],
 };
 
 export const SCORE = {
@@ -34,6 +34,22 @@ export const SCORE = {
   LEVEL_COMPLETE: 1000,
   LIFE_BONUS: 500,
 };
+
+// Manatee Feast food values (from the original paper prototype)
+export const FOOD_SCORE = {
+  lettuce: 100,
+  seaweed: 100,
+  shrimp: 200,
+  fish: 300,
+} as const;
+
+export type FoodKind = keyof typeof FOOD_SCORE;
+
+// Jellyfish penalty (Manatee Feast: jellyfish sting costs points)
+export const JELLY_PENALTY = 150;
+
+// Manatee Feast mode: the paper game gave the player 10 moves.
+export const FEAST_MOVE_LIMIT = 10;
 
 export const PLAYER_SPEED = 130;   // pixels/sec
 export const BOAT_SPEEDS = [80, 95, 70]; // px/sec for each boat

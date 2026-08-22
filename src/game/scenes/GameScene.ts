@@ -1,23 +1,37 @@
 import Phaser from "phaser";
 import {
-  COLORS,
   COLS,
+  FOOD_SCORE,
+  HIT_FREEZE_MS,
   HUD_H,
+  INVULN_MS,
+  JELLY_PENALTY,
+  LIVES_START,
   MAZE_H,
   MAZE_W,
   PLAYER_SPEED,
   ROWS,
   SCORE,
   TILE,
-  INVULN_MS,
-  HIT_FREEZE_MS,
-  LIVES_START,
+  type FoodKind,
 } from "../constants";
 import { level01 } from "../data/level01";
 import type { BoatRoute } from "../data/types";
 import { bus } from "../eventBus";
 import { AudioSystem } from "../systems/AudioSystem";
 import { ScoreSystem } from "../systems/ScoreSystem";
+import { PAL } from "../art/palette";
+import { WaterRenderer } from "../art/water";
+import { drawRopeMaze } from "../art/rope";
+import {
+  bubbleTrail,
+  floatingScore,
+  popSprite,
+  shake,
+  sparkleBurst,
+  splashAt,
+  wakePuff,
+} from "../art/effects";
 
 type Dir = "up" | "down" | "left" | "right";
 const DIRS: Record<Dir, { dx: number; dy: number }> = {
@@ -27,12 +41,27 @@ const DIRS: Record<Dir, { dx: number; dy: number }> = {
   right: { dx: 1, dy: 0 },
 };
 
+const FOOD_COLOR: Record<FoodKind, number> = {
+  lettuce: PAL.lettuce,
+  seaweed: PAL.seaweedLight,
+  shrimp: PAL.shrimp,
+  fish: PAL.fish,
+};
+
 interface BoatState {
   route: BoatRoute;
   sprite: Phaser.GameObjects.Sprite;
   wakeTimer: number;
-  segIndex: number; // current segment start waypoint index
-  segT: number; // progress along segment [0..1]
+  segIndex: number;
+  segT: number;
+}
+
+interface JellyState {
+  sprite: Phaser.GameObjects.Sprite;
+  baseX: number;
+  baseY: number;
+  drift: number;
+  phase: number;
 }
 
 export class GameScene extends Phaser.Scene {
@@ -41,14 +70,16 @@ export class GameScene extends Phaser.Scene {
 
   private mazeOffsetY = HUD_H;
 
-  private waterGfx!: Phaser.GameObjects.Graphics;
+  private water!: WaterRenderer;
   private ropeGfx!: Phaser.GameObjects.Graphics;
   private overlayGfx!: Phaser.GameObjects.Graphics;
-  private wakeGfx!: Phaser.GameObjects.Graphics;
 
   private manatee!: Phaser.GameObjects.Sprite;
-  private lettuceSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
-  private lettuceTotal = 0;
+  private foodSprites: Map<
+    string,
+    { sprite: Phaser.GameObjects.Sprite; kind: FoodKind }
+  > = new Map();
+  private foodTotal = 0;
   private propellerSprites: {
     sprite: Phaser.GameObjects.Sprite;
     c: number;
@@ -57,6 +88,8 @@ export class GameScene extends Phaser.Scene {
   }[] = [];
 
   private boats: BoatState[] = [];
+  private jellies: JellyState[] = [];
+  private leaves: Phaser.GameObjects.Sprite[] = [];
   private warning!: Phaser.GameObjects.Sprite;
 
   // Player tile state
@@ -67,16 +100,17 @@ export class GameScene extends Phaser.Scene {
   private moving = false;
   private currentDir: Dir | null = null;
   private bufferedDir: Dir | null = null;
+  private swimPhase = 0;
 
   private lives = LIVES_START;
   private invulnUntil = 0;
   private frozenUntil = 0;
   private waterTime = 0;
+  private waterAccum = 0;
   private paused = false;
   private gameOver = false;
   private reducedMotion = false;
 
-  // Input
   private keys!: {
     up: Phaser.Input.Keyboard.Key;
     down: Phaser.Input.Keyboard.Key;
@@ -99,25 +133,26 @@ export class GameScene extends Phaser.Scene {
       typeof window !== "undefined" &&
       window.localStorage.getItem("riverManatee.reducedMotion") === "1";
 
-    this.waterGfx = this.add.graphics();
-    this.wakeGfx = this.add.graphics();
-    this.ropeGfx = this.add.graphics();
-    this.overlayGfx = this.add.graphics();
+    this.water = new WaterRenderer(this, 0, this.mazeOffsetY, MAZE_W, MAZE_H);
+    this.water.update(0);
 
-    this.drawWater();
+    this.ropeGfx = this.add.graphics().setDepth(-10);
+    this.overlayGfx = this.add.graphics().setDepth(1);
+
     this.drawRopes();
-    this.spawnLettuce();
+    this.spawnEnvironment();
+    this.spawnFood();
     this.spawnPropellers();
     this.spawnDebris();
+    this.spawnJellyfish();
     this.spawnManatee();
     this.spawnBoats();
 
     this.warning = this.add
       .sprite(0, 0, "warning")
       .setVisible(false)
-      .setDepth(10);
+      .setDepth(12);
 
-    // Input
     const kb = this.input.keyboard!;
     this.keys = {
       up: kb.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
@@ -171,12 +206,11 @@ export class GameScene extends Phaser.Scene {
     });
     bus.on("cmd_dir", (d) => this.queueDir(d));
 
-    // Emit initial state
     bus.emit("score", this.scoreSys.score);
     bus.emit("highScore", this.scoreSys.high);
     bus.emit("lives", this.lives);
-    bus.emit("lettuceTotal", this.lettuceTotal);
-    bus.emit("lettuceRemaining", this.lettuceSprites.size);
+    bus.emit("lettuceTotal", this.foodTotal);
+    bus.emit("lettuceRemaining", this.foodSprites.size);
     bus.emit("ready");
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -191,72 +225,86 @@ export class GameScene extends Phaser.Scene {
 
   // ----- Drawing -----
 
-  private drawWater() {
-    this.waterGfx.clear();
-    this.waterGfx.fillStyle(COLORS.waterDeep, 1);
-    this.waterGfx.fillRect(0, this.mazeOffsetY, MAZE_W, MAZE_H);
-    // Subtle vertical bands of lighter water
-    for (let x = 0; x < MAZE_W; x += 4) {
-      const a =
-        0.05 +
-        0.05 * Math.sin((x + this.waterTime * 30) * 0.04);
-      this.waterGfx.fillStyle(COLORS.waterLight, a);
-      this.waterGfx.fillRect(x, this.mazeOffsetY, 2, MAZE_H);
-    }
-  }
-
   private drawRopes() {
-    this.ropeGfx.clear();
-    const g = this.ropeGfx;
-    // 1) Filled tan rope block per rope tile (clear wall readability)
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        if (level01.grid[r][c] !== "rope") continue;
-        const x = c * TILE;
-        const y = r * TILE + this.mazeOffsetY;
-        g.fillStyle(COLORS.ropeShadow, 1);
-        g.fillRoundedRect(x + 2, y + 2, TILE - 4, TILE - 4, 6);
-        g.fillStyle(COLORS.rope, 1);
-        g.fillRoundedRect(x + 3, y + 3, TILE - 6, TILE - 8, 5);
-        // rope diagonal strands
-        g.lineStyle(2, COLORS.ropeShadow, 0.7);
-        g.lineBetween(x + 4, y + 6, x + TILE - 4, y + TILE - 6);
-        g.lineBetween(x + 4, y + TILE - 6, x + TILE - 4, y + 6);
-      }
+    const decor = drawRopeMaze(this.ropeGfx, level01.grid, this.mazeOffsetY);
+    for (const p of decor.pads) {
+      this.add
+        .sprite(p.x, p.y, "lilypad")
+        .setDepth(-9)
+        .setScale(p.scale)
+        .setAlpha(0.9)
+        .setAngle(((p.x + p.y) % 90) - 45);
     }
-    // 2) Buoys at exposed edges (water-adjacent rope tiles)
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        if (level01.grid[r][c] !== "rope") continue;
-        const adjWater =
-          (r > 0 && level01.grid[r - 1][c] !== "rope") ||
-          (r < ROWS - 1 && level01.grid[r + 1][c] !== "rope") ||
-          (c > 0 && level01.grid[r][c - 1] !== "rope") ||
-          (c < COLS - 1 && level01.grid[r][c + 1] !== "rope");
-        if (!adjWater) continue;
-        if ((c + r) % 2 !== 0) continue;
-        const x = c * TILE + TILE / 2;
-        const y = r * TILE + TILE / 2 + this.mazeOffsetY;
-        g.fillStyle(COLORS.buoy, 1);
-        g.fillCircle(x, y, 4);
-        g.lineStyle(1.2, 0x222222, 1);
-        g.strokeCircle(x, y, 4);
-      }
+    for (const p of decor.posts) {
+      const isBuoy = (Math.round(p.x / TILE) + Math.round(p.y / TILE)) % 7 === 0;
+      this.add
+        .sprite(p.x, p.y, isBuoy ? "buoy" : "post")
+        .setDepth(-8)
+        .setScale(isBuoy ? 0.85 : 0.95);
     }
   }
 
-
-  // ----- Spawning -----
-
-  private spawnLettuce() {
-    for (const w of level01.lettuce) {
-      const key = `${w.c},${w.r}`;
-      const x = w.c * TILE + TILE / 2;
-      const y = w.r * TILE + TILE / 2 + this.mazeOffsetY;
-      const s = this.add.sprite(x, y, "lettuce").setDepth(2);
-      this.lettuceSprites.set(key, s);
+  private spawnEnvironment() {
+    // shoreline vegetation + rocks (decor only, always inside rope regions)
+    for (const rk of level01.decor.rocks) {
+      this.add
+        .sprite(
+          rk.c * TILE + TILE / 2,
+          rk.r * TILE + TILE / 2 + this.mazeOffsetY,
+          "rock",
+        )
+        .setDepth(-7)
+        .setScale(0.9);
     }
-    this.lettuceTotal = this.lettuceSprites.size;
+    for (const rd of level01.decor.reeds) {
+      const x = rd.c * TILE + TILE / 2;
+      const y = rd.r * TILE + TILE / 2 + this.mazeOffsetY;
+      for (let i = -1; i <= 1; i++) {
+        this.add
+          .sprite(x + i * 7, y + Math.abs(i) * 3, "seaweed")
+          .setDepth(-7)
+          .setScale(0.8)
+          .setAlpha(0.85);
+      }
+    }
+    // floating leaves drifting across the surface
+    for (let i = 0; i < 7; i++) {
+      const leaf = this.add
+        .sprite(
+          Math.random() * MAZE_W,
+          this.mazeOffsetY + Math.random() * MAZE_H,
+          "leaf",
+        )
+        .setDepth(0)
+        .setAlpha(0.75)
+        .setScale(0.7 + Math.random() * 0.5)
+        .setAngle(Math.random() * 360);
+      this.leaves.push(leaf);
+    }
+  }
+
+  private spawnFood() {
+    for (const f of level01.foods) {
+      const key = `${f.c},${f.r}`;
+      const x = f.c * TILE + TILE / 2;
+      const y = f.r * TILE + TILE / 2 + this.mazeOffsetY;
+      const s = this.add.sprite(x, y, f.kind).setDepth(2);
+      if (f.kind !== "lettuce") s.setScale(1.05);
+      if (!this.reducedMotion) {
+        // gentle float
+        this.tweens.add({
+          targets: s,
+          y: y - 3,
+          duration: 1100 + Math.random() * 500,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut",
+          delay: Math.random() * 600,
+        });
+      }
+      this.foodSprites.set(key, { sprite: s, kind: f.kind });
+    }
+    this.foodTotal = this.foodSprites.size;
   }
 
   private spawnPropellers() {
@@ -270,7 +318,6 @@ export class GameScene extends Phaser.Scene {
         r: p.r,
         radius: p.radiusTiles * TILE,
       });
-      // visible hazard ring (dashed via overlay)
     }
   }
 
@@ -278,7 +325,22 @@ export class GameScene extends Phaser.Scene {
     for (const d of level01.debrisDecorative) {
       const x = d.c * TILE + TILE / 2;
       const y = d.r * TILE + TILE / 2 + this.mazeOffsetY;
-      this.add.sprite(x, y, "debris").setDepth(2).setAlpha(0.9);
+      this.add.sprite(x, y, "debris").setDepth(2).setAlpha(0.95);
+    }
+  }
+
+  private spawnJellyfish() {
+    for (const j of level01.jellyfish) {
+      const x = j.c * TILE + TILE / 2;
+      const y = j.r * TILE + TILE / 2 + this.mazeOffsetY;
+      const sprite = this.add.sprite(x, y, "jellyfish").setDepth(4);
+      this.jellies.push({
+        sprite,
+        baseX: x,
+        baseY: y,
+        drift: (j.drift ?? 0) * TILE,
+        phase: Math.random() * Math.PI * 2,
+      });
     }
   }
 
@@ -288,8 +350,9 @@ export class GameScene extends Phaser.Scene {
     this.pcy = this.pty = sp.r;
     const x = sp.c * TILE + TILE / 2;
     const y = sp.r * TILE + TILE / 2 + this.mazeOffsetY;
-    this.manatee = this.add.sprite(x, y, "manatee").setDepth(5);
+    this.manatee = this.add.sprite(x, y, "manatee").setDepth(6);
     this.manatee.setOrigin(0.5, 0.5);
+    this.manatee.setScale(0.82);
   }
 
   private spawnBoats() {
@@ -299,15 +362,9 @@ export class GameScene extends Phaser.Scene {
       const y = wp0.r * TILE + TILE / 2 + this.mazeOffsetY;
       const sprite = this.add
         .sprite(x, y, `boat-${route.colorIndex}`)
-        .setDepth(4);
+        .setDepth(5);
       sprite.setOrigin(0.5, 0.5);
-      this.boats.push({
-        route,
-        sprite,
-        wakeTimer: 0,
-        segIndex: 0,
-        segT: 0,
-      });
+      this.boats.push({ route, sprite, wakeTimer: 0, segIndex: 0, segT: 0 });
     }
   }
 
@@ -319,7 +376,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private queueDir(d: Dir) {
-    // If at tile center & immediate direction is walkable, apply now
     if (!this.moving) {
       const { dx, dy } = DIRS[d];
       if (this.isWalkable(this.pcx + dx, this.pcy + dy)) {
@@ -363,11 +419,15 @@ export class GameScene extends Phaser.Scene {
     if (this.paused || this.gameOver) return;
     const dt = deltaMs / 1000;
     this.waterTime += dt;
-    if (this.waterTime % 0.15 < dt) this.drawWater();
+    this.waterAccum += dt;
+    if (this.waterAccum > (this.reducedMotion ? 0.5 : 0.08)) {
+      this.waterAccum = 0;
+      this.water.update(this.waterTime);
+    }
+    this.updateLeaves(dt);
 
     if (this.time.now < this.frozenUntil) return;
 
-    // Read keyboard
     if (this.keys.up.isDown || this.keys.w.isDown) this.queueDir("up");
     else if (this.keys.down.isDown || this.keys.s.isDown) this.queueDir("down");
     else if (this.keys.left.isDown || this.keys.a.isDown) this.queueDir("left");
@@ -377,13 +437,25 @@ export class GameScene extends Phaser.Scene {
     this.updateManatee(dt);
     this.updatePropellers(dt);
     this.updateBoats(dt);
-    this.checkLettuce();
+    this.updateJellies();
+    this.checkFood();
     this.checkHazards();
+  }
+
+  private updateLeaves(dt: number) {
+    for (const leaf of this.leaves) {
+      leaf.x += dt * 7;
+      leaf.y += Math.sin(this.waterTime + leaf.x * 0.01) * dt * 5;
+      leaf.angle += dt * 4;
+      if (leaf.x > MAZE_W + 12) {
+        leaf.x = -12;
+        leaf.y = this.mazeOffsetY + Math.random() * MAZE_H;
+      }
+    }
   }
 
   private updateManatee(dt: number) {
     if (!this.moving || !this.currentDir) {
-      // try to start from buffered
       if (this.bufferedDir) {
         const { dx, dy } = DIRS[this.bufferedDir];
         if (this.isWalkable(this.pcx + dx, this.pcy + dy)) {
@@ -392,6 +464,8 @@ export class GameScene extends Phaser.Scene {
           this.startStep();
         }
       }
+      if (this.manatee.texture.key !== "manatee")
+        this.manatee.setTexture("manatee");
       return;
     }
 
@@ -409,7 +483,6 @@ export class GameScene extends Phaser.Scene {
       this.pcy = this.pty;
       this.moving = false;
 
-      // Choose next dir: buffered first, then continue current
       const tryDir = (d: Dir): boolean => {
         const v = DIRS[d];
         if (this.isWalkable(this.pcx + v.dx, this.pcy + v.dy)) {
@@ -427,23 +500,28 @@ export class GameScene extends Phaser.Scene {
         }
       }
       if (!advanced && this.currentDir) {
-        if (!tryDir(this.currentDir)) {
-          this.currentDir = null;
-        }
+        if (!tryDir(this.currentDir)) this.currentDir = null;
       }
     } else {
       this.manatee.x += (dx / dist) * step;
       this.manatee.y += (dy / dist) * step;
-      // wake every ~120ms
-      if (!this.reducedMotion && Math.random() < dt * 6) {
-        this.spawnWake(this.manatee.x, this.manatee.y, 0.25, 6);
+
+      // swim cycle (tail swing) + bubble trail
+      if (!this.reducedMotion) {
+        this.swimPhase += dt * 6;
+        const frame = Math.floor(this.swimPhase) % 4;
+        const key =
+          frame === 1 ? "manatee-swim-1" : frame === 3 ? "manatee-swim-2" : "manatee";
+        if (this.manatee.texture.key !== key) this.manatee.setTexture(key);
+        if (Math.random() < dt * 7) {
+          bubbleTrail(this, this.manatee.x, this.manatee.y, false);
+        }
       }
     }
 
-    // Invulnerability flash
     if (this.time.now < this.invulnUntil) {
-      const t = Math.floor(this.time.now / 100) % 2;
-      this.manatee.setAlpha(t ? 1 : 0.4);
+      const t = Math.floor(this.time.now / (this.reducedMotion ? 250 : 100)) % 2;
+      this.manatee.setAlpha(t ? 1 : 0.45);
     } else {
       this.manatee.setAlpha(1);
     }
@@ -451,28 +529,43 @@ export class GameScene extends Phaser.Scene {
 
   private updatePropellers(dt: number) {
     for (const p of this.propellerSprites) {
-      p.sprite.rotation += dt * 8;
+      p.sprite.rotation += dt * (this.reducedMotion ? 3 : 9);
     }
-    // ripple ring
     this.overlayGfx.clear();
     for (const p of this.propellerSprites) {
       const x = p.c * TILE + TILE / 2;
       const y = p.r * TILE + TILE / 2 + this.mazeOffsetY;
-      this.overlayGfx.lineStyle(2, COLORS.hazard, 0.85);
-      // dashed circle approximation
-      const segs = 24;
+      // swirling water
+      this.overlayGfx.fillStyle(PAL.riverNavy, 0.25);
+      this.overlayGfx.fillCircle(x, y, p.radius);
+      const pulse = this.reducedMotion
+        ? 0.8
+        : 0.6 + 0.4 * Math.sin(this.waterTime * 5);
+      this.overlayGfx.lineStyle(3, PAL.hazard, pulse);
+      const segs = 26;
       for (let i = 0; i < segs; i++) {
         if (i % 2) continue;
-        const a0 = (i / segs) * Math.PI * 2;
-        const a1 = ((i + 1) / segs) * Math.PI * 2;
+        const a0 = (i / segs) * Math.PI * 2 + this.waterTime * 0.6;
+        const a1 = ((i + 1) / segs) * Math.PI * 2 + this.waterTime * 0.6;
         this.overlayGfx.beginPath();
         this.overlayGfx.arc(x, y, p.radius, a0, a1, false);
         this.overlayGfx.strokePath();
       }
-      // expanding ripple
-      const rip = (this.waterTime * 30) % TILE;
-      this.overlayGfx.lineStyle(1, 0xffffff, 0.4);
+      this.overlayGfx.lineStyle(2, PAL.hazardWarm, 0.5);
+      this.overlayGfx.strokeCircle(x, y, p.radius * 0.72);
+      const rip = (this.waterTime * 26) % TILE;
+      this.overlayGfx.lineStyle(1.5, PAL.foam, 0.35);
       this.overlayGfx.strokeCircle(x, y, 8 + rip);
+    }
+  }
+
+  private updateJellies() {
+    for (const j of this.jellies) {
+      const t = this.waterTime + j.phase;
+      j.sprite.x = j.baseX + Math.sin(t * 0.7) * j.drift;
+      j.sprite.y = j.baseY + Math.sin(t * 1.6) * 4;
+      const s = this.reducedMotion ? 1 : 1 + Math.sin(t * 3) * 0.08;
+      j.sprite.setScale(s, 1 / s);
     }
   }
 
@@ -497,15 +590,18 @@ export class GameScene extends Phaser.Scene {
       const y = ay + (by - ay) * t;
       b.sprite.x = x;
       b.sprite.y = y;
-      // Orient bow (top of sprite) toward direction of travel
       const angle = Math.atan2(by - ay, bx - ax) + Math.PI / 2;
       b.sprite.setRotation(angle);
 
-      // wake trail
       b.wakeTimer -= dt;
       if (!this.reducedMotion && b.wakeTimer <= 0) {
-        b.wakeTimer = 0.06;
-        this.spawnWake(x - (bx - ax) / segLen * 22, y - (by - ay) / segLen * 22, 0.5, 10);
+        b.wakeTimer = 0.09;
+        wakePuff(
+          this,
+          x - ((bx - ax) / segLen) * 26,
+          y - ((by - ay) / segLen) * 26,
+          false,
+        );
       }
 
       if (b.route.warnAtCenterCrossing) {
@@ -517,38 +613,45 @@ export class GameScene extends Phaser.Scene {
             this.warning.setVisible(true);
             this.audio.play("warn");
           }
-          this.warning.setAlpha(0.6 + 0.4 * Math.sin(this.time.now / 80));
+          this.warning.setAlpha(
+            this.reducedMotion ? 1 : 0.6 + 0.4 * Math.sin(this.time.now / 80),
+          );
         }
       }
     }
     if (!warnNear && this.warning.visible) this.warning.setVisible(false);
-
-    // Fade wake graphics over time
-    this.wakeGfx.setAlpha(Math.max(0, this.wakeGfx.alpha - dt * 0.8));
-    if (this.wakeGfx.alpha < 0.05) {
-      this.wakeGfx.clear();
-      this.wakeGfx.setAlpha(1);
-    }
   }
 
-  private spawnWake(x: number, y: number, alpha: number, r: number) {
-    this.wakeGfx.fillStyle(0xffffff, alpha);
-    this.wakeGfx.fillCircle(x, y, r);
-  }
-
-  private checkLettuce() {
+  private checkFood() {
     const px = this.manatee.x;
     const py = this.manatee.y;
     const rad = TILE * 0.45;
-    for (const [key, s] of this.lettuceSprites) {
+    for (const [key, entry] of this.foodSprites) {
+      const s = entry.sprite;
       if (Math.hypot(s.x - px, s.y - py) < rad) {
-        s.destroy();
-        this.lettuceSprites.delete(key);
-        this.scoreSys.add(SCORE.LETTUCE);
+        const value = FOOD_SCORE[entry.kind];
+        this.tweens.killTweensOf(s);
+        popSprite(this, s, this.reducedMotion);
+        sparkleBurst(this, s.x, s.y, this.reducedMotion, entry.kind === "lettuce" ? 4 : 7);
+        floatingScore(this, s.x, s.y, `+${value}`, FOOD_COLOR[entry.kind]);
+        this.foodSprites.delete(key);
+        this.scoreSys.add(value);
         this.audio.play("pickup");
+        // happy squish
+        if (!this.reducedMotion) {
+          this.tweens.add({
+            targets: this.manatee,
+            scaleX: 0.95,
+            scaleY: 0.72,
+            duration: 90,
+            yoyo: true,
+            ease: "Quad.easeOut",
+            onComplete: () => this.manatee.setScale(0.82),
+          });
+        }
         bus.emit("score", this.scoreSys.score);
-        bus.emit("lettuceRemaining", this.lettuceSprites.size);
-        if (this.lettuceSprites.size === 0) {
+        bus.emit("lettuceRemaining", this.foodSprites.size);
+        if (this.foodSprites.size === 0) {
           this.completeLevel();
           return;
         }
@@ -560,7 +663,6 @@ export class GameScene extends Phaser.Scene {
     if (this.time.now < this.invulnUntil) return;
     const px = this.manatee.x;
     const py = this.manatee.y;
-    // Boats — forgiving box
     for (const b of this.boats) {
       const dx = Math.abs(b.sprite.x - px);
       const dy = Math.abs(b.sprite.y - py);
@@ -569,7 +671,6 @@ export class GameScene extends Phaser.Scene {
         return;
       }
     }
-    // Propeller
     for (const p of this.propellerSprites) {
       const cx = p.c * TILE + TILE / 2;
       const cy = p.r * TILE + TILE / 2 + this.mazeOffsetY;
@@ -578,6 +679,22 @@ export class GameScene extends Phaser.Scene {
         return;
       }
     }
+    // Jellyfish sting: costs points, not a life.
+    for (const j of this.jellies) {
+      if (Math.hypot(j.sprite.x - px, j.sprite.y - py) < TILE * 0.55) {
+        this.stung(j);
+        return;
+      }
+    }
+  }
+
+  private stung(j: JellyState) {
+    this.audio.play("warn");
+    this.invulnUntil = this.time.now + 1200;
+    this.scoreSys.add(-JELLY_PENALTY);
+    bus.emit("score", this.scoreSys.score);
+    floatingScore(this, this.manatee.x, this.manatee.y - 10, `-${JELLY_PENALTY}`, PAL.jellyLight);
+    splashAt(this, j.sprite.x, j.sprite.y, this.reducedMotion);
   }
 
   private takeHit() {
@@ -586,42 +703,50 @@ export class GameScene extends Phaser.Scene {
     this.invulnUntil = this.time.now + HIT_FREEZE_MS + INVULN_MS;
     this.lives -= 1;
     bus.emit("lives", Math.max(0, this.lives));
-    // Respawn
+    splashAt(this, this.manatee.x, this.manatee.y, this.reducedMotion);
+    shake(this, this.reducedMotion);
+
     const sp = level01.playerSpawn;
     this.pcx = this.ptx = sp.c;
     this.pcy = this.pty = sp.r;
     this.manatee.x = sp.c * TILE + TILE / 2;
     this.manatee.y = sp.r * TILE + TILE / 2 + this.mazeOffsetY;
+    this.manatee.setScale(0.82);
     this.moving = false;
     this.currentDir = null;
     this.bufferedDir = null;
-    // Splash effect
-    const splash = this.add.sprite(this.manatee.x, this.manatee.y, "splash").setDepth(20);
-    this.tweens.add({
-      targets: splash,
-      scale: 2,
-      alpha: 0,
-      duration: 500,
-      onComplete: () => splash.destroy(),
-    });
-    if (this.lives < 0) {
-      this.endGame();
-    }
+    splashAt(this, this.manatee.x, this.manatee.y, this.reducedMotion);
+
+    if (this.lives < 0) this.endGame();
   }
 
   private completeLevel() {
     this.audio.play("complete");
     this.gameOver = true;
-    const lettuceCollected = this.lettuceTotal;
+    const collected = this.foodTotal;
     const livesRemaining = Math.max(0, this.lives);
     const bonus = SCORE.LEVEL_COMPLETE + livesRemaining * SCORE.LIFE_BONUS;
     this.scoreSys.add(bonus);
     this.scoreSys.commitHigh();
+    // celebration
+    if (!this.reducedMotion) {
+      for (let i = 0; i < 14; i++) {
+        this.time.delayedCall(i * 70, () =>
+          sparkleBurst(
+            this,
+            Math.random() * MAZE_W,
+            this.mazeOffsetY + Math.random() * MAZE_H,
+            false,
+            4,
+          ),
+        );
+      }
+    }
     bus.emit("score", this.scoreSys.score);
     bus.emit("highScore", this.scoreSys.high);
     bus.emit("levelComplete", {
       score: this.scoreSys.score,
-      lettuceCollected,
+      lettuceCollected: collected,
       livesRemaining,
       completionBonus: bonus,
     });
@@ -632,7 +757,7 @@ export class GameScene extends Phaser.Scene {
     this.gameOver = true;
     this.scoreSys.commitHigh();
     bus.emit("highScore", this.scoreSys.high);
-    const collected = this.lettuceTotal - this.lettuceSprites.size;
+    const collected = this.foodTotal - this.foodSprites.size;
     bus.emit("gameOver", {
       score: this.scoreSys.score,
       highScore: this.scoreSys.high,
@@ -650,8 +775,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private restartLevel() {
-    // Clean reset: restart scene
     this.scene.restart();
   }
 }
-

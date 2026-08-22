@@ -59,7 +59,22 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* River Manatee brand tokens */
+  --color-river-navy: var(--river-navy);
+  --color-river-deep: var(--river-deep);
+  --color-river-teal: var(--river-teal);
+  --color-river-aqua: var(--river-aqua);
+  --color-river-foam: var(--river-foam);
+  --color-river-lettuce: var(--river-lettuce);
+  --color-river-seaweed: var(--river-seaweed);
+  --color-river-rope: var(--river-rope);
+  --color-river-wood: var(--river-wood);
+  --color-river-hazard: var(--river-hazard);
+  --color-river-jelly: var(--river-jelly);
+  --color-river-manatee: var(--river-manatee);
 }
+
 
 :root {
   --radius: 0.625rem;
@@ -95,6 +110,18 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --river-navy: oklch(0.32 0.062 219);
+  --river-deep: oklch(0.44 0.086 220);
+  --river-teal: oklch(0.58 0.109 225);
+  --river-aqua: oklch(0.80 0.108 213);
+  --river-foam: oklch(0.97 0.021 205);
+  --river-lettuce: oklch(0.83 0.184 133);
+  --river-seaweed: oklch(0.45 0.081 160);
+  --river-rope: oklch(0.76 0.093 78);
+  --river-wood: oklch(0.50 0.088 58);
+  --river-hazard: oklch(0.65 0.212 5);
+  --river-jelly: oklch(0.68 0.203 320);
+  --river-manatee: oklch(0.76 0.014 220);
 }
 
 .dark {
@@ -154,4 +181,58 @@
 @keyframes river-drift {
   0% { background-position: 0 0, 0 0, 0 0; }
   100% { background-position: 200px 80px, -160px -40px, 240px 0; }
+}
+
+/* ---------------------------------------- River Manatee brand + juice */
+
+@utility river-frame {
+  /* lush shoreline vignette around the playfield */
+  background-image:
+    radial-gradient(120% 70% at 50% 0%, color-mix(in oklab, var(--river-aqua) 22%, transparent), transparent 60%),
+    radial-gradient(90% 60% at 50% 100%, color-mix(in oklab, var(--river-seaweed) 55%, transparent), transparent 65%),
+    linear-gradient(180deg, var(--river-deep), var(--river-navy));
+}
+
+@utility river-vines {
+  background-image:
+    radial-gradient(closest-side, color-mix(in oklab, var(--river-seaweed) 85%, black 10%) 68%, transparent 70%),
+    radial-gradient(closest-side, color-mix(in oklab, var(--river-lettuce) 60%, black 20%) 60%, transparent 62%);
+  background-size: 78px 78px, 54px 54px;
+  background-position: 0 0, 30px 42px;
+  background-repeat: repeat;
+}
+
+@utility title-splash {
+  background-image: linear-gradient(180deg, var(--river-foam) 0%, var(--river-aqua) 45%, var(--river-teal) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 color-mix(in oklab, var(--river-navy) 80%, transparent))
+          drop-shadow(0 10px 22px color-mix(in oklab, var(--river-navy) 70%, transparent));
+}
+
+@utility title-splash-green {
+  background-image: linear-gradient(180deg, #d8ff9e 0%, var(--river-lettuce) 45%, #2f8f4e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 color-mix(in oklab, var(--river-navy) 80%, transparent))
+          drop-shadow(0 10px 22px color-mix(in oklab, var(--river-navy) 70%, transparent));
+}
+
+@utility bob-slow {
+  animation: bob 4.5s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+
+@utility press-pop {
+  transition: transform 140ms cubic-bezier(.2,.9,.3,1.4), box-shadow 140ms ease, filter 140ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .river-ripples, .bob-slow { animation: none; }
 }
