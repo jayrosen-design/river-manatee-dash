@@ -125,6 +125,9 @@ export class AudioSystem {
 
   private startAmbience() {
     if (!this.ctx || !this.master) return;
+    // Never stack ambience layers.
+    this.ambienceNode?.stop();
+    this.ambienceNode = null;
     // Gentle pad: two detuned sine oscillators very low.
     const o1 = this.ctx.createOscillator();
     const o2 = this.ctx.createOscillator();
@@ -184,3 +187,6 @@ export class AudioSystem {
     }
   }
 }
+
+/** Shared instance — a single AudioContext for the whole app. */
+export const audio = new AudioSystem();

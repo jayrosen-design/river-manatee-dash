@@ -18,7 +18,7 @@ import {
 import { level01 } from "../data/level01";
 import type { BoatRoute } from "../data/types";
 import { bus } from "../eventBus";
-import { AudioSystem } from "../systems/AudioSystem";
+import { audio } from "../systems/AudioSystem";
 import { ScoreSystem } from "../systems/ScoreSystem";
 import { PAL } from "../art/palette";
 import { WaterRenderer } from "../art/water";
@@ -65,7 +65,7 @@ interface JellyState {
 }
 
 export class GameScene extends Phaser.Scene {
-  private audio = new AudioSystem();
+  private audio = audio;
   private scoreSys = new ScoreSystem();
 
   private mazeOffsetY = HUD_H;
@@ -767,6 +767,8 @@ export class GameScene extends Phaser.Scene {
 
   private setPaused(p: boolean) {
     this.paused = p;
+    if (p) this.audio.suspend();
+    else this.audio.resume();
     bus.emit("paused", p);
   }
 
