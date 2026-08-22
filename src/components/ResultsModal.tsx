@@ -29,9 +29,6 @@ export function ResultsModal({ data, onPlayAgain, onMenu }: Props) {
       aria-modal="true"
     >
       <div className="w-full max-w-sm rounded-3xl bg-river-navy border-2 border-river-aqua/35 text-river-foam p-6 shadow-2xl">
-        <div className="text-center text-4xl mb-1" aria-hidden>
-          {complete ? "🎉" : "🩶"}
-        </div>
         <h2
           className={`text-3xl font-black text-center mb-4 ${
             complete ? "title-splash-green" : "title-splash"

@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import { FEAST_MOVE_LIMIT, FOOD_SCORE, STORAGE_KEYS } from "@/game/constants";
 import { HowToPlay } from "./HowToPlay";
+import { Leaf, Ship, Waves, Heart, Utensils, Volume2, VolumeX, Play } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface Props {
   onPlay: () => void;
 }
 
-const FEATURES: { icon: string; title: string; sub: string }[] = [
-  { icon: "🥬", title: "Collect Food", sub: `Lettuce ${FOOD_SCORE.lettuce} · Fish ${FOOD_SCORE.fish}` },
-  { icon: "🚤", title: "Avoid Boats", sub: "Stay safe in the lanes" },
-  { icon: "🌀", title: "Dodge Hazards", sub: "Propellers & jellyfish" },
-  { icon: "🩶", title: "3 Manatees", sub: "Can you clear the maze?" },
+const FEATURES: { Icon: LucideIcon; title: string; sub: string }[] = [
+  { Icon: Leaf, title: "Collect Food", sub: `Lettuce ${FOOD_SCORE.lettuce} · Fish ${FOOD_SCORE.fish}` },
+  { Icon: Ship, title: "Avoid Boats", sub: "Stay safe in the lanes" },
+  { Icon: Waves, title: "Dodge Hazards", sub: "Propellers & jellyfish" },
+  { Icon: Heart, title: "3 Manatees", sub: "Can you clear the maze?" },
 ];
 
 export function MainMenu({ onPlay }: Props) {
@@ -63,14 +65,19 @@ export function MainMenu({ onPlay }: Props) {
               onClick={onPlay}
               className="press-pop px-6 py-3.5 rounded-2xl bg-river-lettuce text-river-navy font-black text-lg tracking-wide shadow-[0_8px_0_var(--river-seaweed)] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[0_4px_0_var(--river-seaweed)] focus:outline-none focus:ring-4 focus:ring-river-lettuce/40"
             >
-              ▶ PLAY ARCADE
+              <span className="inline-flex items-center justify-center gap-2">
+                <Play className="h-5 w-5 fill-current" /> PLAY ARCADE
+              </span>
             </button>
             <button
               disabled
               title="Coming soon"
               className="px-6 py-3 rounded-2xl bg-river-navy/70 text-river-foam/50 border border-dashed border-river-aqua/40 font-semibold cursor-not-allowed text-sm"
             >
-              🍽 Manatee Feast Mode — {FEAST_MOVE_LIMIT} moves (coming soon)
+              <span className="inline-flex items-center justify-center gap-2">
+                <Utensils className="h-4 w-4" /> Manatee Feast Mode —{" "}
+                {FEAST_MOVE_LIMIT} moves (coming soon)
+              </span>
             </button>
             <div className="flex gap-3">
               <button
@@ -83,7 +90,11 @@ export function MainMenu({ onPlay }: Props) {
                 onClick={toggleMute}
                 className="press-pop px-4 py-2.5 rounded-xl bg-river-navy/70 hover:bg-river-navy text-river-foam text-sm border border-river-foam/15 focus:outline-none focus:ring-2 focus:ring-river-foam/40"
               >
-                {muted ? "🔇" : "🔊"}
+                {muted ? (
+                  <VolumeX className="h-4 w-4" />
+                ) : (
+                  <Volume2 className="h-4 w-4" />
+                )}
               </button>
             </div>
           </div>
@@ -106,8 +117,8 @@ export function MainMenu({ onPlay }: Props) {
               key={f.title}
               className="flex items-center gap-3 rounded-2xl bg-river-navy/80 border border-river-aqua/25 px-4 py-3 backdrop-blur-sm shadow-lg"
             >
-              <span className="text-2xl leading-none" aria-hidden>
-                {f.icon}
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-river-teal/50 border border-river-aqua/30">
+                <f.Icon className="h-5 w-5 text-river-lettuce" aria-hidden />
               </span>
               <div>
                 <div className="font-black uppercase tracking-wide text-sm text-river-foam">
