@@ -97,16 +97,8 @@ export function GameContainer({ onExitToMenu }: Props) {
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const stopKeys = (e: KeyboardEvent) => {
-      if (
-        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)
-      )
-        e.preventDefault();
-    };
-    window.addEventListener("keydown", stopKeys, { passive: false });
     return () => {
       document.body.style.overflow = prev;
-      window.removeEventListener("keydown", stopKeys);
     };
   }, []);
 
