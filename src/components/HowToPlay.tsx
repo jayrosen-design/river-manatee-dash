@@ -1,4 +1,4 @@
-import { FEAST_MOVE_LIMIT, FOOD_SCORE, JELLY_PENALTY } from "@/game/constants";
+import { FOOD_SCORE, JELLY_PENALTY } from "@/game/constants";
 
 interface Props {
   onClose: () => void;
