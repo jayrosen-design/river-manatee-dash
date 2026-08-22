@@ -24,40 +24,38 @@ export function ResultsModal({ data, onPlayAgain, onMenu }: Props) {
   const complete = data.kind === "complete";
   return (
     <div
-      className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4"
+      className="absolute inset-0 z-30 flex items-center justify-center bg-river-navy/85 backdrop-blur-sm p-4"
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-sm rounded-2xl bg-slate-900 border border-white/10 text-white p-6 shadow-2xl">
+      <div className="w-full max-w-sm rounded-3xl bg-river-navy border-2 border-river-aqua/35 text-river-foam p-6 shadow-2xl">
         <h2
-          className={`text-3xl font-black text-center mb-3 ${
-            complete ? "text-emerald-300" : "text-rose-300"
+          className={`text-3xl font-black text-center mb-4 ${
+            complete ? "title-splash-green" : "title-splash"
           }`}
         >
-          {complete ? "Level Complete!" : "Game Over"}
+          {complete ? "Feast Complete!" : "Game Over"}
         </h2>
 
-        <dl className="grid grid-cols-2 gap-y-1 text-sm">
-          <dt className="opacity-70">Final score</dt>
-          <dd className="text-right font-mono font-bold">
+        <dl className="grid grid-cols-2 gap-y-1.5 text-sm rounded-2xl bg-river-deep/50 p-4">
+          <dt className="opacity-75">Final score</dt>
+          <dd className="text-right font-mono font-black text-river-lettuce">
             {data.score.toLocaleString()}
           </dd>
-          <dt className="opacity-70">Lettuce collected</dt>
+          <dt className="opacity-75">Food collected</dt>
           <dd className="text-right font-mono">{data.lettuceCollected}</dd>
           {complete ? (
             <>
-              <dt className="opacity-70">Lives remaining</dt>
-              <dd className="text-right font-mono">
-                {data.livesRemaining}
-              </dd>
-              <dt className="opacity-70">Completion bonus</dt>
+              <dt className="opacity-75">Manatees left</dt>
+              <dd className="text-right font-mono">{data.livesRemaining}</dd>
+              <dt className="opacity-75">Completion bonus</dt>
               <dd className="text-right font-mono">
                 +{data.completionBonus.toLocaleString()}
               </dd>
             </>
           ) : (
             <>
-              <dt className="opacity-70">High score</dt>
+              <dt className="opacity-75">High score</dt>
               <dd className="text-right font-mono">
                 {data.highScore.toLocaleString()}
               </dd>
@@ -66,23 +64,23 @@ export function ResultsModal({ data, onPlayAgain, onMenu }: Props) {
         </dl>
 
         {complete && (
-          <p className="mt-4 text-xs italic text-sky-200/80 text-center">
+          <p className="mt-4 text-xs italic text-river-aqua/85 text-center">
             Slow down in manatee zones. Responsible boating helps protect
             Florida wildlife.
           </p>
         )}
 
-        <div className="mt-5 flex flex-col gap-2">
+        <div className="mt-5 flex flex-col gap-2.5">
           <button
             onClick={onPlayAgain}
             autoFocus
-            className="px-4 py-2 rounded-lg bg-emerald-400 text-emerald-950 font-bold hover:bg-emerald-300 focus:outline-none focus:ring-4 focus:ring-emerald-300/50"
+            className="press-pop px-4 py-2.5 rounded-xl bg-river-lettuce text-river-navy font-black shadow-[0_6px_0_var(--river-seaweed)] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[0_3px_0_var(--river-seaweed)] focus:outline-none focus:ring-4 focus:ring-river-lettuce/40"
           >
             Play Again
           </button>
           <button
             onClick={onMenu}
-            className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 font-semibold focus:outline-none focus:ring-4 focus:ring-slate-400/50"
+            className="press-pop px-4 py-2.5 rounded-xl bg-river-deep/80 font-bold border border-river-foam/15 hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-river-foam/30"
           >
             Main Menu
           </button>

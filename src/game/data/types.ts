@@ -1,3 +1,5 @@
+import type { FoodKind } from "../constants";
+
 export type TileType =
   | "water"
   | "rope"
@@ -10,6 +12,15 @@ export type TileType =
 export interface Waypoint {
   c: number;
   r: number;
+}
+
+export interface FoodSpec extends Waypoint {
+  kind: FoodKind;
+}
+
+export interface JellySpec extends Waypoint {
+  /** drift amplitude in tiles; 0 = pulses in place */
+  drift?: number;
 }
 
 export interface BoatRoute {
@@ -32,8 +43,11 @@ export interface LevelData {
   // grid[row][col] holds the base tile type (water/rope/debris).
   grid: TileType[][];
   playerSpawn: Waypoint;
-  lettuce: Waypoint[];
+  /** All collectibles, typed (lettuce is the common one). */
+  foods: FoodSpec[];
   boats: BoatRoute[];
   propellers: PropellerSpec[];
+  jellyfish: JellySpec[];
   debrisDecorative: Waypoint[];
+  decor: { rocks: Waypoint[]; reeds: Waypoint[] };
 }

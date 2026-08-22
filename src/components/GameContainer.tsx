@@ -128,22 +128,24 @@ export function GameContainer({ onExitToMenu }: Props) {
   }
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
-      {/* Decorative shoreline framing on widescreen */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-sky-700/40 via-emerald-900/30 to-emerald-950/60" />
-      <div className="absolute inset-y-0 left-0 w-[12vw] pointer-events-none bg-gradient-to-r from-emerald-900/70 to-transparent" />
-      <div className="absolute inset-y-0 right-0 w-[12vw] pointer-events-none bg-gradient-to-l from-emerald-900/70 to-transparent" />
+    <div className="relative w-full h-full flex items-center justify-center river-frame">
+      {/* Lush shoreline framing around the playfield */}
+      <div className="absolute inset-0 pointer-events-none opacity-35 mix-blend-screen river-ripples" />
+      <div className="absolute inset-y-0 left-0 w-[10vw] pointer-events-none river-vines opacity-90 [mask-image:linear-gradient(to_right,black,transparent)]" />
+      <div className="absolute inset-y-0 right-0 w-[10vw] pointer-events-none river-vines opacity-90 [mask-image:linear-gradient(to_left,black,transparent)]" />
+      <div className="absolute inset-x-0 bottom-0 h-[8vh] pointer-events-none river-vines opacity-80 [mask-image:linear-gradient(to_top,black,transparent)]" />
 
       <div
         ref={hostRef}
         id="phaser-host"
-        className="relative z-10 rounded-xl overflow-hidden shadow-2xl ring-2 ring-emerald-900/50"
+        className="relative z-10 rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.55)] ring-4 ring-river-wood/70"
         style={{
           width: "min(96vw, calc(96vh * (800 / 600)))",
           aspectRatio: "800 / 600",
           touchAction: "none",
         }}
       />
+
 
       <TouchControls />
 
@@ -169,10 +171,11 @@ export function GameContainer({ onExitToMenu }: Props) {
 
       <button
         onClick={handlePause}
-        className="absolute top-3 left-3 z-30 px-3 py-1.5 rounded-md bg-slate-900/70 text-white text-xs backdrop-blur hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-400"
+        className="press-pop absolute top-3 left-3 z-30 px-3.5 py-1.5 rounded-xl bg-river-navy/80 text-river-foam text-xs font-bold uppercase tracking-widest backdrop-blur border border-river-aqua/30 hover:bg-river-navy focus:outline-none focus:ring-2 focus:ring-river-aqua"
       >
         Menu
       </button>
+
     </div>
   );
 }
