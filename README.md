@@ -2,6 +2,8 @@
 
 A polished top-down arcade maze game built with React 19, TypeScript, TanStack Start (Vite 7), Phaser 3 and Tailwind CSS v4. You swim a friendly Florida manatee through a rope maze, gather floating lettuce, and dodge boats and propellers.
 
+![River Manatee promotional thumbnail](https://river-manatee-dash.lovable.app/__l5e/assets-v1/c9bd933e-d2de-4486-9341-bce8ab7b8f23/river-manatee-promo.png)
+
 ```bash
 npm install
 npm run dev
@@ -41,6 +43,8 @@ Hit freeze           400 ms
 | Propeller | Rotating blades with a dashed hazard ring; radius ~1.1 tiles |
 | Damage | Freeze, splash, −1 life, respawn at spawn, i-frames with flashing alpha |
 | Persistence | High score, mute and reduced-motion flags in LocalStorage |
+
+![Gameplay screenshot](https://river-manatee-dash.lovable.app/__l5e/assets-v1/316b2a2c-e97d-41d8-ae90-84d5a8a98ea0/river-manatee-gameplay.png)
 
 ## 4. Controls
 
