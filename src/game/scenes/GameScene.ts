@@ -128,11 +128,28 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    // Scene instances are reused across scene.restart(), so every piece of
+    // run state has to be reset here or a fresh game starts frozen.
+    this.gameOver = false;
+    this.paused = false;
+    this.lives = LIVES_START;
+    this.moving = false;
+    this.currentDir = null;
+    this.bufferedDir = null;
+    this.swimPhase = 0;
+    this.waterTime = 0;
+    this.waterAccum = 0;
+    this.frozenUntil = 0;
+    this.foodTotal = 0;
+    this.scoreSys.reset();
+    bus.emit("paused", false);
+
     this.audio.unlock();
     this.audio.resume();
     this.reducedMotion =
       typeof window !== "undefined" &&
       window.localStorage.getItem("riverManatee.reducedMotion") === "1";
+
 
     this.water = new WaterRenderer(this, 0, this.mazeOffsetY, MAZE_W, MAZE_H);
     this.water.update(0);
