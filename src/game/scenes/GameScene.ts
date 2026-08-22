@@ -166,6 +166,11 @@ export class GameScene extends Phaser.Scene {
     this.spawnManatee();
     this.spawnBoats();
 
+    // Grace period so boats patrolling near the spawn can't kill you instantly.
+    this.invulnUntil = this.time.now + INVULN_MS;
+
+
+
     this.warning = this.add
       .sprite(0, 0, "warning")
       .setVisible(false)
