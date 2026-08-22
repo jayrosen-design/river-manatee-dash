@@ -120,9 +120,6 @@ export function MainMenu({ onPlay }: Props) {
               </div>
             </div>
           ))}
-          <p className="text-center lg:text-right text-[11px] text-river-foam/60 italic">
-            Inspired by the paper prototype “Manatee Feast”.
-          </p>
         </div>
       </div>
 
