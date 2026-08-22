@@ -194,12 +194,14 @@
 }
 
 @utility river-vines {
+  /* soft, out-of-focus foliage — reads as shoreline, never as polka dots */
   background-image:
-    radial-gradient(closest-side, color-mix(in oklab, var(--river-seaweed) 85%, black 10%) 68%, transparent 70%),
-    radial-gradient(closest-side, color-mix(in oklab, var(--river-lettuce) 60%, black 20%) 60%, transparent 62%);
-  background-size: 78px 78px, 54px 54px;
-  background-position: 0 0, 30px 42px;
+    radial-gradient(closest-side, color-mix(in oklab, var(--river-seaweed) 70%, black 20%) 55%, transparent 75%),
+    radial-gradient(closest-side, color-mix(in oklab, var(--river-lettuce) 35%, var(--river-seaweed) 65%) 45%, transparent 72%);
+  background-size: 150px 190px, 96px 120px;
+  background-position: 0 0, 58px 84px;
   background-repeat: repeat;
+  filter: blur(9px) saturate(0.9);
 }
 
 @utility title-splash {
