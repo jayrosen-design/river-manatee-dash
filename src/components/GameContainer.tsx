@@ -4,6 +4,7 @@ import { PauseMenu } from "./PauseMenu";
 import { ResultsModal } from "./ResultsModal";
 import { TouchControls } from "./TouchControls";
 import { STORAGE_KEYS } from "@/game/constants";
+import { audio } from "@/game/systems/AudioSystem";
 
 interface Props {
   onExitToMenu: () => void;
@@ -78,6 +79,11 @@ export function GameContainer({ onExitToMenu }: Props) {
       bus.off("paused", onPaused);
       bus.off("levelComplete", onComplete);
       bus.off("gameOver", onGameOver);
+      try {
+        audio.dispose();
+      } catch {
+        /* ignore */
+      }
       try {
         game?.destroy(true);
       } catch {
