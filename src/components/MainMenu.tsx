@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { FEAST_MOVE_LIMIT, FOOD_SCORE, STORAGE_KEYS } from "@/game/constants";
+import { FOOD_SCORE, STORAGE_KEYS } from "@/game/constants";
 import { HowToPlay } from "./HowToPlay";
-import { Leaf, Ship, Waves, Heart, Utensils, Volume2, VolumeX, Play } from "lucide-react";
+import { Leaf, Ship, Waves, Heart, Volume2, VolumeX, Play } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 interface Props {
