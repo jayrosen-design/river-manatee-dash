@@ -155,6 +155,15 @@ export class GameScene extends Phaser.Scene {
       .setDepth(12);
 
     const kb = this.input.keyboard!;
+    // Let Phaser swallow arrows/space so the page doesn't scroll,
+    // without any outside listener pre-empting the game input.
+    kb.addCapture([
+      Phaser.Input.Keyboard.KeyCodes.UP,
+      Phaser.Input.Keyboard.KeyCodes.DOWN,
+      Phaser.Input.Keyboard.KeyCodes.LEFT,
+      Phaser.Input.Keyboard.KeyCodes.RIGHT,
+      Phaser.Input.Keyboard.KeyCodes.SPACE,
+    ]);
     this.keys = {
       up: kb.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
       down: kb.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN),
