@@ -171,10 +171,11 @@ export function GameContainer({ onExitToMenu }: Props) {
 
       <button
         onClick={handlePause}
-        className="absolute top-3 left-3 z-30 px-3 py-1.5 rounded-md bg-slate-900/70 text-white text-xs backdrop-blur hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-400"
+        className="press-pop absolute top-3 left-3 z-30 px-3.5 py-1.5 rounded-xl bg-river-navy/80 text-river-foam text-xs font-bold uppercase tracking-widest backdrop-blur border border-river-aqua/30 hover:bg-river-navy focus:outline-none focus:ring-2 focus:ring-river-aqua"
       >
         Menu
       </button>
+
     </div>
   );
 }
