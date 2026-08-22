@@ -1,4 +1,4 @@
-import { FEAST_MOVE_LIMIT, FOOD_SCORE, JELLY_PENALTY } from "@/game/constants";
+import { FOOD_SCORE, JELLY_PENALTY } from "@/game/constants";
 
 interface Props {
   onClose: () => void;
@@ -43,10 +43,6 @@ export function HowToPlay({ onClose }: Props) {
             Press <b>Esc</b> or the pause button to pause.
           </li>
         </ul>
-        <p className="mt-4 text-xs text-river-aqua/85 italic">
-          Coming soon: Manatee Feast Mode — score as high as you can in{" "}
-          {FEAST_MOVE_LIMIT} moves, just like the original paper game.
-        </p>
         <button
           onClick={onClose}
           className="press-pop mt-5 w-full px-4 py-2.5 rounded-xl bg-river-lettuce text-river-navy font-black shadow-[0_6px_0_var(--river-seaweed)] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[0_3px_0_var(--river-seaweed)] focus:outline-none focus:ring-4 focus:ring-river-lettuce/40"
