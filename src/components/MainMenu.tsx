@@ -69,16 +69,6 @@ export function MainMenu({ onPlay }: Props) {
                 <Play className="h-5 w-5 fill-current" /> PLAY ARCADE
               </span>
             </button>
-            <button
-              disabled
-              title="Coming soon"
-              className="px-6 py-3 rounded-2xl bg-river-navy/70 text-river-foam/50 border border-dashed border-river-aqua/40 font-semibold cursor-not-allowed text-sm"
-            >
-              <span className="inline-flex items-center justify-center gap-2">
-                <Utensils className="h-4 w-4" /> Manatee Feast Mode —{" "}
-                {FEAST_MOVE_LIMIT} moves (coming soon)
-              </span>
-            </button>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowHelp(true)}
