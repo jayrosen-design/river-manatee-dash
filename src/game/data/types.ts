@@ -1,13 +1,7 @@
 import type { FoodKind } from "../constants";
 
 export type TileType =
-  | "water"
-  | "rope"
-  | "lettuce"
-  | "playerSpawn"
-  | "boatSpawn"
-  | "propeller"
-  | "debris";
+  "water" | "rope" | "gate" | "lettuce" | "playerSpawn" | "boatSpawn" | "propeller" | "debris";
 
 export interface Waypoint {
   c: number;
@@ -37,9 +31,32 @@ export interface PropellerSpec {
   radiusTiles: number;
 }
 
+/** A screen-wide stretch of river. Zones are laid out left to right. */
+export interface ZoneSpec {
+  index: number;
+  name: string;
+  /** Inclusive column range owned by this zone. */
+  c0: number;
+  c1: number;
+}
+
+/** A locked opening in the wall between zone `index` and zone `index + 1`. */
+export interface GateSpec {
+  index: number;
+  c: number;
+  rows: number[];
+}
+
 export interface LevelData {
+  id: string;
+  name: string;
+  subtitle: string;
+  difficulty: 1 | 2 | 3;
+  characterVariant: "manny" | "coral" | "sage";
   cols: number;
   rows: number;
+  zones: ZoneSpec[];
+  gates: GateSpec[];
   // grid[row][col] holds the base tile type (water/rope/debris).
   grid: TileType[][];
   playerSpawn: Waypoint;

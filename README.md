@@ -1,8 +1,8 @@
-# River Manatee — Game Design Document
+# River Manatee
 
-A polished top-down arcade maze game built with React 19, TypeScript, TanStack Start (Vite 7), Phaser 3 and Tailwind CSS v4. You swim a friendly Florida manatee through a rope maze, gather floating lettuce, and dodge boats and propellers.
+A 3D Florida-springs arcade game. Swim a manatee through rope channels, feast on floating food, and time your dash past motor boats. Built with React 19, TypeScript, TanStack Start (Vite), Three.js, and Tailwind CSS v4.
 
-![River Manatee promotional thumbnail](https://river-manatee-dash.lovable.app/__l5e/assets-v1/c9bd933e-d2de-4486-9341-bce8ab7b8f23/river-manatee-promo.png)
+![Main menu](docs/screenshots/menu.png)
 
 ```bash
 npm install
@@ -13,194 +13,214 @@ npm run dev
 
 ## 1. Design pillars
 
-1. **Calm but tense** — gentle water motion and soft colors, punctuated by boat hazards with clear telegraphing.
-2. **Instantly readable** — hazards use icon + shape + motion, never color alone.
-3. **Fair arcade rules** — grid movement with input buffering, forgiving hitboxes, invulnerability after a hit.
-4. **Zero external assets** — every texture is drawn procedurally at runtime, every sound is synthesized with WebAudio.
+1. **Calm but tense** — cold first-magnitude spring water, mossy forest banks, and clear telegraphing before a boat closes in.
+2. **Instantly readable** — hazards use shape + motion + warning lights, never color alone.
+3. **Fair arcade rules** — grid movement with input buffering, instant reversals, and a stamina dash for close escapes.
+4. **Zero external assets** — hulls, trees, water, and textures are generated at runtime; every sound is synthesized with WebAudio.
 
-## 2. Core loop
+## 2. Campaign
 
-Enter maze → steer through corridors → collect lettuce (+100) → avoid boats and propellers → clear all lettuce → level complete bonus → beat the high score.
+Three river courses, each three zones wide. Clear every food item in the current zone to sink the boom and open the channel downstream. Finish all three zones to unlock the next waterway.
+
+| Course | Swimmer | Zones | Feel |
+| --- | --- | --- | --- |
+| **Spring Run** | Manny | Headspring · Cypress Run · Manatee Cove | First-magnitude spring, dense cypress |
+| **Mangrove Bend** | Coral | Mangrove Bend · Root Tangle · Oyster Bar | Tight coves and sheltered turns |
+| **Gulf Gauntlet** | Sage | Gulf Gauntlet · Shipping Lane · Open Gulf | Fast lanes out to open water |
+
+![Spring Run gameplay](docs/screenshots/gameplay.png)
+
+## 3. Core loop
+
+Enter the river → steer through rope corridors → collect food (combo if you chain it) → dash past boats → clear the zone to unlock the gate → finish all three zones → course bonus → next river.
 
 ```text
-Lettuce            100 pts each
-Level complete   1,000 pts
-Remaining life     500 pts each
-Lives                  3
-Invulnerability    2,000 ms after a hit
-Hit freeze           400 ms
+Lettuce / seaweed     100 pts
+Shrimp                200 pts
+Fish                  300 pts
+Close-call skim        50 pts × combo
+Combo chain            x2 / x3 / x4 if pickups stay within 1.7 s
+Jellyfish sting      −150 pts (and breaks combo)
+Course complete     1,000 pts
+Remaining life        500 pts each
+Lives                       3
+Invulnerability     2,000 ms after a non-fatal hit
+Hit freeze            400 ms
 ```
 
-## 3. World and rules
+## 4. World and rules
 
 | System | Rule |
 | --- | --- |
-| Grid | 25 x 17 tiles, 32 px tiles → 800 x 544 maze, 56 px HUD band, 800 x 600 logical canvas |
-| Walls | `rope` tiles (tan rope + buoys); everything else is walkable water |
-| Player | Snaps to tile centers, moves at 130 px/s, holds `currentDir` + `bufferedDir` |
-| Buffering | At each tile center: apply buffered direction if walkable, else continue current, else stop |
-| Boats | 3 waypoint patrols (80 / 95 / 70 px/s) along reserved lanes; blue boat crosses the central corridor and triggers a warning icon + beep before entering |
-| Propeller | Rotating blades with a dashed hazard ring; radius ~1.1 tiles |
-| Damage | Freeze, splash, −1 life, respawn at spawn, i-frames with flashing alpha |
-| Persistence | High score, mute and reduced-motion flags in LocalStorage |
+| Grid | Each zone is 25 × 17 tiles. Courses stitch three zones left to right with a locked gate between them. |
+| Walls | `rope` tiles (tan line + buoys). `gate` tiles are blocked until that zone is cleared. |
+| Player | Snaps to tile centers. Opposite-direction input flips instantly mid-tile. |
+| Dash | Hold Space / Shift (or DASH). 1.75× speed, drains stamina at 0.55/s, regenerates at 0.32/s. |
+| Boats | Waypoint patrols on reserved lanes. Speed rises as the zone empties (up to +45%). A direct hit is immediately fatal. |
+| Close call | Skim a boat without touching it for a bonus popup. |
+| Propeller | Rotating blades; costs one manatee. |
+| Jellyfish | Sting for −150 and break combo; not lethal. |
+| Damage | Boat → game over. Propeller / other hits → freeze, splash, −1 life, respawn at the current zone entrance, i-frames. |
+| Persistence | High score, mute, and reduced-motion flags in LocalStorage. |
 
-![Gameplay screenshot](https://river-manatee-dash.lovable.app/__l5e/assets-v1/316b2a2c-e97d-41d8-ae90-84d5a8a98ea0/river-manatee-gameplay.png)
+![Center-console motor boat](docs/screenshots/boat.png)
 
-## 4. Controls
+Boats are small planing runabouts: V-hull, colored foredeck, open cockpit, windshield, and an outboard on the transom.
 
-- **Keyboard**: Arrow keys or WASD to swim, `Esc` to pause.
-- **Touch**: swipe on the canvas, or the translucent on-screen D-pad.
-- All inputs normalize to a single direction intent, so no input path can bypass wall checks.
+## 5. Controls
 
-## 5. Technical architecture
+![How to Play](docs/screenshots/how-to-play.png)
+
+- **Keyboard**: Arrow keys or WASD to swim. Space or Shift to dash. Esc to pause.
+- **Touch**: swipe on the canvas, or the on-screen pad plus DASH.
+- All inputs normalize to a single direction intent, so no input path can bypass wall or gate checks.
+
+## 6. Technical architecture
+
+The live renderer is **Three.js** (`ThreeManateeGame`). Phaser scenes remain in the repo as the earlier 2D prototype. React owns menus, HUD, and mounting. The two sides never share state directly — they exchange events on the bus.
 
 ```mermaid
 graph TD
   subgraph React["React shell (TanStack Start route /)"]
     IDX["routes/index.tsx<br/>menu vs game screen"]
     MENU["MainMenu / HowToPlay"]
-    GC["GameContainer<br/>mounts Phaser, shoreline frame"]
+    GC["GameContainer<br/>mounts Three.js, HUD"]
     PM["PauseMenu"]
     RM["ResultsModal"]
-    TC["TouchControls (D-pad)"]
+    TC["TouchControls"]
   end
 
   BUS["eventBus (mitt)<br/>typed GameEvents"]
 
-  subgraph Phaser["Phaser 3 game"]
-    BOOT["BootScene<br/>scale + boot"]
-    PRE["PreloadScene<br/>procedural textures"]
-    GS["GameScene<br/>maze, player, boats, hazards"]
-    UI["UIScene<br/>in-canvas HUD"]
+  subgraph Three["Three.js game"]
+    TMG["ThreeManateeGame<br/>camera, water, boats, manatee"]
+    FX["Bloom + sky + spring water shader"]
   end
 
   subgraph Systems["Systems and data"]
-    LVL["data/level01.ts<br/>grid, lettuce, routes"]
-    SS["ScoreSystem<br/>LocalStorage high score"]
-    AS["AudioSystem<br/>WebAudio SFX"]
-    CST["constants.ts<br/>tiles, speeds, colors"]
+    LVL["data/levels.ts<br/>3 courses × 3 zones"]
+    SS["ScoreSystem"]
+    AS["AudioSystem"]
+    CST["constants.ts"]
   end
 
   IDX --> MENU
   IDX --> GC
-  GC --> BOOT
-  BOOT --> PRE --> GS --> UI
+  GC --> TMG
+  TMG --> FX
   GC <--> BUS
   PM <--> BUS
   RM <--> BUS
   TC --> BUS
-  BUS <--> GS
-  BUS --> UI
-  LVL --> GS
-  CST --> GS
-  SS --> GS
-  AS --> GS
+  BUS <--> TMG
+  LVL --> TMG
+  CST --> TMG
+  SS --> TMG
+  AS --> TMG
 ```
-
-**Boundary rule:** all gameplay (movement, collision, hazards, scoring) lives in Phaser. React owns only menus, modals and mounting. The two sides never touch each other's state directly — they exchange events on the bus.
 
 ### Event contract
 
 ```text
-Phaser -> React : score, highScore, lives, lettuceRemaining, lettuceTotal,
-                  levelComplete, gameOver, paused, ready
-React -> Phaser : cmd_pause, cmd_resume, cmd_restart, cmd_toMenu,
-                  cmd_setMuted, cmd_setReducedMotion, cmd_dir
+Game -> React : score, highScore, lives, lettuceRemaining, lettuceTotal,
+                levelInfo, levelComplete, gameOver, paused, ready,
+                combo, dash, zone
+React -> Game : cmd_pause, cmd_resume, cmd_restart, cmd_nextLevel,
+                cmd_toMenu, cmd_setMuted, cmd_setReducedMotion,
+                cmd_dir, cmd_dash
 ```
 
-## 6. Screen flow
+## 7. Screen flow
 
 ```mermaid
 stateDiagram-v2
   [*] --> MainMenu
   MainMenu --> HowToPlay: How to Play
   HowToPlay --> MainMenu: Close
-  MainMenu --> Playing: Play
+  MainMenu --> Playing: Start Campaign
   Playing --> Paused: Esc / pause button
   Paused --> Playing: Resume
-  Paused --> Playing: Restart (cmd_restart)
+  Paused --> Playing: Restart
   Paused --> MainMenu: Main Menu
-  Playing --> LevelComplete: last lettuce collected
-  Playing --> GameOver: lives reach 0
-  LevelComplete --> Playing: Play Again
+  Playing --> LevelComplete: all three zones cleared
+  Playing --> GameOver: boat hit or lives reach 0
+  LevelComplete --> Playing: Continue / Play Again
   LevelComplete --> MainMenu: Main Menu
   GameOver --> Playing: Play Again
   GameOver --> MainMenu: Main Menu
 ```
 
-## 7. Frame update order (GameScene.update)
+## 8. Frame update order
 
 ```mermaid
 sequenceDiagram
-  participant In as Input (keys / swipe / dpad)
-  participant GS as GameScene
-  participant Maze as Grid
-  participant Haz as Boats + Propellers
+  participant In as Input (keys / swipe / pad / dash)
+  participant G as ThreeManateeGame
+  participant Maze as Grid + gates
+  participant Haz as Boats + props + jellies
   participant Bus as eventBus
-  participant UI as UIScene / React
+  participant UI as React HUD
 
-  In->>GS: direction intent -> bufferedDir
-  GS->>GS: skip if paused / frozen / gameOver
-  GS->>Maze: at tile center? isWalkable(next)
-  Maze-->>GS: allow or block
-  GS->>GS: interpolate toward target tile
-  GS->>GS: lettuce overlap -> score += 100
-  GS->>Haz: advance boat waypoints, spin propellers, telegraph warning
-  Haz-->>GS: overlap test (forgiving hitbox, ignored during i-frames)
-  GS->>Bus: score / lives / lettuceRemaining / levelComplete / gameOver
+  In->>G: direction + dash hold
+  G->>G: skip if paused / frozen / gameOver
+  G->>Maze: at tile center? walkable and unlocked?
+  Maze-->>G: allow, block, or nag locked gate
+  G->>G: interpolate, swim pose, dash bubbles
+  G->>G: food overlap -> combo score + zone remaining
+  G->>Haz: patrol boats, spin props, pulse beacons
+  Haz-->>G: overlap (boat = fatal, prop = life, jelly = points)
+  G->>Bus: score / lives / combo / dash / zone / complete / gameOver
   Bus->>UI: HUD refresh, modal open
 ```
 
-## 8. Damage resolution
+## 9. Damage resolution
 
 ```mermaid
 flowchart TD
-  A[Hazard overlap detected] --> B{Invulnerable?}
-  B -- yes --> C[Ignore]
-  B -- no --> D[Splash FX + hit sound]
-  D --> E[Freeze input 400 ms]
-  E --> F[lives - 1, emit lives]
-  F --> G{lives > 0?}
-  G -- yes --> H[Respawn at spawn tile<br/>2 s invulnerability flash]
-  G -- no --> I[commitHigh, emit gameOver]
-  H --> J[Resume play]
+  A[Hazard overlap] --> B{Kind?}
+  B -- boat --> C[Fatal: lives 0, game over]
+  B -- propeller --> D{Invulnerable?}
+  B -- jellyfish --> E[−150 pts, break combo]
+  D -- yes --> F[Ignore]
+  D -- no --> G[Splash + freeze 400 ms]
+  G --> H[lives - 1]
+  H --> I{lives > 0?}
+  I -- yes --> J[Respawn at zone entrance<br/>2 s invulnerability]
+  I -- no --> K[commit high score, game over]
 ```
 
-## 9. Audio design
+## 10. Audio and presentation
 
-`AudioSystem` synthesizes everything with oscillators and noise bursts: pickup blip, boat warning beep, splash on hit, level-complete arpeggio, game-over descent, UI click. It is unlocked on first user gesture and respects the mute flag from LocalStorage.
+`AudioSystem` synthesizes pickup (pitch-scaled by combo), boat warning, splash, dash, close-call, gate unlock, locked-gate bump, complete, game-over, and UI click. Unlocked on first gesture; respects mute.
 
-## 10. Accessibility
+The 3D scene uses a physical sky, image-based lighting, bloom, a world-space spring-water shader (caustics, vent boil, glints), and a mossy cypress / palmetto backdrop.
 
-- Menus are fully keyboard navigable with visible focus rings.
-- Reduced-motion toggle disables wake particles and ripple animation and slows flashing.
-- Hazards carry a warning icon and distinct silhouette so they are not color-dependent.
-- HUD sits in its own band above the maze and never overlaps a corridor.
+## 11. Accessibility
 
-## 11. File map
+- Menus are keyboard navigable with visible focus rings.
+- Reduced-motion slows flashing and trims particle motion.
+- Hazards carry a warning beacon and a distinct silhouette.
+- HUD sits in a band above the river and never covers a corridor.
+
+## 12. File map
 
 ```text
 src/
-  routes/index.tsx           screen switch + SEO head
-  components/                MainMenu, HowToPlay, GameContainer,
-                             PauseMenu, ResultsModal, TouchControls
+  routes/index.tsx              screen switch + SEO head
+  components/                   MainMenu, HowToPlay, GameContainer,
+                                PauseMenu, ResultsModal, TouchControls
   game/
-    config.ts                Phaser game factory (Scale.FIT, 800x600)
-    constants.ts             tiles, speeds, scoring, palette, storage keys
-    eventBus.ts              typed mitt bridge
-    data/level01.ts          procedural grid, lettuce, boat routes, propeller
-    data/types.ts            TileType, LevelData, BoatRoute, PropellerSpec
-    scenes/                  BootScene, PreloadScene, GameScene, UIScene
-    systems/                 ScoreSystem, AudioSystem
+    config.ts                   creates ThreeManateeGame
+    constants.ts                tiles, scoring, palette, storage keys
+    eventBus.ts                 typed mitt bridge
+    three/ThreeManateeGame.ts   3D renderer, input, collisions
+    data/levels.ts              campaign recipes and zone stitching
+    data/types.ts               LevelData, zones, gates, foods
+    systems/                    ScoreSystem, AudioSystem
 ```
 
-## 12. Extending
+## 13. Extending
 
-- **New level**: copy `level01.ts`, adjust rope rectangles, lettuce exclusions, boat waypoints and propellers, then load it in `GameScene.create()`.
-- **New hazard**: add a spec to `data/types.ts`, spawn it in `GameScene`, and add its overlap test alongside boats and propellers.
-- **Real art**: replace the runtime textures in `PreloadScene` with `this.load.image(...)` calls; texture keys stay the same.
-- **Tuning**: all balance numbers (speeds, lives, i-frames, scoring) live in `constants.ts`.
-
-## 13. Out of scope (v1)
-
-Multiple levels, pathfinding boat AI, finished art and music, online leaderboards.
+- **New course**: add a `LevelRecipe` with three `SectionRecipe`s in `data/levels.ts` and append it to `levels`.
+- **New hazard**: add a spec to `data/types.ts`, spawn it in `ThreeManateeGame`, and add its overlap test.
+- **Tuning**: food values and lives live in `constants.ts`; dash, combo window, and boat pressure live at the top of `ThreeManateeGame.ts`.

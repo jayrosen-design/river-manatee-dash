@@ -16,28 +16,41 @@ export function HowToPlay({ onClose }: Props) {
         <h2 className="text-3xl font-black title-splash mb-4">How to Play</h2>
         <ul className="space-y-2 text-sm leading-relaxed list-disc pl-5 marker:text-river-lettuce">
           <li>
-            <b>Move</b> with Arrow Keys or WASD. On mobile, swipe or use the
-            on-screen pad.
+            <b>Move</b> with Arrow Keys or WASD. On mobile, swipe or use the on-screen pad. Tap the
+            opposite direction to flip around instantly.
           </li>
           <li>
-            <b>Clear the river</b> of every food item to finish the level.
+            <b>Dash</b> by holding <b>Space</b> or <b>Shift</b> (or the DASH button). It burns
+            stamina fast, so save it for slipping past boats.
           </li>
           <li>
-            <b>Food values:</b> lettuce {FOOD_SCORE.lettuce}, seaweed{" "}
-            {FOOD_SCORE.seaweed}, shrimp {FOOD_SCORE.shrimp}, fish{" "}
-            {FOOD_SCORE.fish}.
+            <b>Chain pickups</b> within a couple of seconds to build a combo: x2, x3, then x4
+            points. Getting stung or hit breaks the chain.
           </li>
           <li>
-            <b>Avoid boats</b> and the spinning propeller — each costs a
+            <b>Close calls</b> pay out: skim past a boat without touching it for a bonus. Boats
+            speed up as the course empties.
+          </li>
+          <li>
+            <b>The river runs past the screen.</b> Each course is three zones wide: eat every item
+            in your zone to sink the boom and open the channel downstream.
+          </li>
+          <li>
+            <b>Clear all three zones</b> to finish the course and unlock the next of three rivers.
+          </li>
+          <li>
+            <b>Food values:</b> lettuce {FOOD_SCORE.lettuce}, seaweed {FOOD_SCORE.seaweed}, shrimp{" "}
+            {FOOD_SCORE.shrimp}, fish {FOOD_SCORE.fish}.
+          </li>
+          <li>
+            <b>Avoid boats</b> — a direct collision is immediately fatal. Propellers cost one
             manatee.
           </li>
           <li>
-            <b>Jellyfish sting</b> for −{JELLY_PENALTY} points, so weave
-            around them.
+            <b>Jellyfish sting</b> for −{JELLY_PENALTY} points, so weave around them.
           </li>
           <li>
-            You have <b>three manatees</b>. After a hit you briefly flash and
-            cannot be hit again.
+            You have <b>three manatees</b>. After a hit you briefly flash and cannot be hit again.
           </li>
           <li>
             Press <b>Esc</b> or the pause button to pause.

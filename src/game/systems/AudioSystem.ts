@@ -8,6 +8,10 @@ type SfxName =
   | "complete"
   | "gameover"
   | "click"
+  | "closeCall"
+  | "dash"
+  | "gate"
+  | "locked"
   | "ambience";
 
 export class AudioSystem {
@@ -64,10 +68,8 @@ export class AudioSystem {
     if (this.unlocked || typeof window === "undefined") return;
     try {
       const Ctx =
-        (window as unknown as { AudioContext?: typeof AudioContext })
-          .AudioContext ||
-        (window as unknown as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
+        (window as unknown as { AudioContext?: typeof AudioContext }).AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!Ctx) return;
       this.ctx = new Ctx();
       this.master = this.ctx.createGain();
@@ -80,13 +82,7 @@ export class AudioSystem {
     }
   }
 
-  private envTone(
-    freq: number,
-    dur: number,
-    type: OscillatorType = "sine",
-    gain = 0.3,
-    delay = 0,
-  ) {
+  private envTone(freq: number, dur: number, type: OscillatorType = "sine", gain = 0.3, delay = 0) {
     if (!this.ctx || !this.master) return;
     const t0 = this.ctx.currentTime + delay;
     const osc = this.ctx.createOscillator();
@@ -110,8 +106,7 @@ export class AudioSystem {
       this.ctx.sampleRate,
     );
     const data = buffer.getChannelData(0);
-    for (let i = 0; i < data.length; i++)
-      data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
     const src = this.ctx.createBufferSource();
     src.buffer = buffer;
     const g = this.ctx.createGain();
@@ -154,12 +149,33 @@ export class AudioSystem {
     };
   }
 
-  play(name: SfxName) {
+  /** `pitch` scales frequencies (1 = default); used to make combo pickups climb. */
+  play(name: SfxName, pitch = 1) {
     if (!this.unlocked || this._muted || !this.ctx) return;
     switch (name) {
       case "pickup":
-        this.envTone(880, 0.08, "triangle", 0.25);
-        this.envTone(1320, 0.1, "triangle", 0.2, 0.04);
+        this.envTone(880 * pitch, 0.08, "triangle", 0.25);
+        this.envTone(1320 * pitch, 0.1, "triangle", 0.2, 0.04);
+        break;
+      case "closeCall":
+        this.envTone(420, 0.07, "square", 0.16);
+        this.envTone(840, 0.12, "triangle", 0.2, 0.06);
+        this.envTone(1260, 0.14, "triangle", 0.16, 0.12);
+        break;
+      case "dash":
+        this.noiseBurst(0.18, 0.12);
+        this.envTone(240, 0.16, "sine", 0.12);
+        break;
+      case "gate":
+        // Rising fanfare + a deep splash as the boom sinks.
+        [392, 494, 587, 784, 988].forEach((f, i) =>
+          this.envTone(f, 0.22, "triangle", 0.22, i * 0.09),
+        );
+        this.noiseBurst(0.5, 0.2);
+        break;
+      case "locked":
+        this.envTone(220, 0.09, "square", 0.14);
+        this.envTone(180, 0.14, "square", 0.14, 0.1);
         break;
       case "warn":
         this.envTone(660, 0.1, "square", 0.18);
@@ -170,14 +186,10 @@ export class AudioSystem {
         this.envTone(180, 0.25, "sine", 0.18);
         break;
       case "complete":
-        [523, 659, 784, 1046].forEach((f, i) =>
-          this.envTone(f, 0.18, "triangle", 0.25, i * 0.12),
-        );
+        [523, 659, 784, 1046].forEach((f, i) => this.envTone(f, 0.18, "triangle", 0.25, i * 0.12));
         break;
       case "gameover":
-        [440, 330, 220, 165].forEach((f, i) =>
-          this.envTone(f, 0.3, "sawtooth", 0.22, i * 0.18),
-        );
+        [440, 330, 220, 165].forEach((f, i) => this.envTone(f, 0.3, "sawtooth", 0.22, i * 0.18));
         break;
       case "click":
         this.envTone(520, 0.05, "square", 0.15);

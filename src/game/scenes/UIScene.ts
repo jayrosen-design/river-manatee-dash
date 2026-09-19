@@ -8,6 +8,7 @@ export class UIScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
   private highText!: Phaser.GameObjects.Text;
   private foodText!: Phaser.GameObjects.Text;
+  private levelText!: Phaser.GameObjects.Text;
   private livesContainer!: Phaser.GameObjects.Container;
   private pauseBtn!: Phaser.GameObjects.Container;
   private pauseIcon!: Phaser.GameObjects.Text;
@@ -34,7 +35,7 @@ export class UIScene extends Phaser.Scene {
       g.strokeRoundedRect(x, 7, w, HUD_H - 17, 11);
     };
     panel(10, 190);
-    panel(GAME_W / 2 - 78, 156);
+    panel(214, 270);
     panel(GAME_W - 214, 148);
 
     const base: Phaser.Types.GameObjects.Text.TextStyle = {
@@ -62,15 +63,24 @@ export class UIScene extends Phaser.Scene {
     });
 
     this.add
-      .text(GAME_W / 2, 13, "FOOD LEFT", {
+      .text(422, 13, "FOOD LEFT", {
         ...base,
         fontSize: "10px",
         color: hex(PAL.hudAccent),
       })
       .setOrigin(0.5, 0);
-    this.foodText = this.add
-      .text(GAME_W / 2, 24, "0", { ...base, fontSize: "20px" })
-      .setOrigin(0.5, 0);
+    this.foodText = this.add.text(422, 24, "0", { ...base, fontSize: "20px" }).setOrigin(0.5, 0);
+
+    this.add.text(228, 12, "CURRENT COURSE", {
+      ...base,
+      fontSize: "10px",
+      color: hex(PAL.hudAccent),
+    });
+    this.levelText = this.add.text(228, 27, "1 / 3  SPRING RUN", {
+      ...base,
+      fontSize: "13px",
+      color: hex(PAL.lettuceLight),
+    });
 
     this.add.text(GAME_W - 204, 12, "MANATEES", {
       ...base,
@@ -109,6 +119,9 @@ export class UIScene extends Phaser.Scene {
     bus.on("score", (s) => this.scoreText.setText(s.toLocaleString()));
     bus.on("highScore", (s) => this.highText.setText(s.toLocaleString()));
     bus.on("lettuceRemaining", (n) => this.foodText.setText(String(n)));
+    bus.on("levelInfo", ({ index, count, name }) =>
+      this.levelText.setText(`${index + 1} / ${count}  ${name.toUpperCase()}`),
+    );
     bus.on("lives", (n) => this.renderLives(n));
     bus.on("paused", (p) => {
       this.paused = p;
@@ -119,6 +132,7 @@ export class UIScene extends Phaser.Scene {
       bus.off("score");
       bus.off("highScore");
       bus.off("lettuceRemaining");
+      bus.off("levelInfo");
       bus.off("lives");
       bus.off("paused");
     });

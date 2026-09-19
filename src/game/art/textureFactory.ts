@@ -31,7 +31,12 @@ function softCircle(g: G, x: number, y: number, r: number, color: number, alpha 
 
 /* ------------------------------------------------------------------ manatee */
 
-function makeManatee(scene: Phaser.Scene, key: string, tailSwing: number) {
+function makeManatee(
+  scene: Phaser.Scene,
+  key: string,
+  tailSwing: number,
+  colors: { body: number; dark: number; belly: number; blush: number },
+) {
   const g = gfx(scene);
   const w = 44;
   const h = 56;
@@ -43,7 +48,7 @@ function makeManatee(scene: Phaser.Scene, key: string, tailSwing: number) {
 
   // tail fluke (bottom), swings for the swim cycle
   const ty = h - 9;
-  g.fillStyle(PAL.manateeDark, 1);
+  g.fillStyle(colors.dark, 1);
   g.beginPath();
   g.moveTo(cx, ty - 6);
   g.lineTo(cx - 15 + tailSwing, ty + 9);
@@ -53,37 +58,37 @@ function makeManatee(scene: Phaser.Scene, key: string, tailSwing: number) {
   g.fillPath();
 
   // body
-  g.fillStyle(PAL.manatee, 1);
+  g.fillStyle(colors.body, 1);
   g.fillEllipse(cx, h / 2 - 3, w * 0.78, h * 0.8);
   // rounded head bulge
   g.fillCircle(cx, 15, 13);
 
   // belly / light
-  g.fillStyle(PAL.manateeBelly, 0.85);
+  g.fillStyle(colors.belly, 0.85);
   g.fillEllipse(cx, h / 2 + 2, w * 0.5, h * 0.5);
 
   // flippers
-  g.fillStyle(PAL.manateeDark, 1);
+  g.fillStyle(colors.dark, 1);
   g.fillEllipse(cx - 16, h / 2 + 2, 12, 20);
   g.fillEllipse(cx + 16, h / 2 + 2, 12, 20);
-  g.fillStyle(PAL.manatee, 1);
+  g.fillStyle(colors.body, 1);
   g.fillEllipse(cx - 15.5, h / 2 + 1, 9, 16);
   g.fillEllipse(cx + 15.5, h / 2 + 1, 9, 16);
 
   // snout
-  g.fillStyle(PAL.manateeBelly, 1);
+  g.fillStyle(colors.belly, 1);
   g.fillEllipse(cx, 11, 15, 11);
-  g.fillStyle(PAL.manateeDark, 0.85);
+  g.fillStyle(colors.dark, 0.85);
   g.fillEllipse(cx - 3.5, 9, 3, 2.5);
   g.fillEllipse(cx + 3.5, 9, 3, 2.5);
   // whisker dots
-  g.fillStyle(PAL.manateeDark, 0.5);
+  g.fillStyle(colors.dark, 0.5);
   for (let i = -1; i <= 1; i++) {
     g.fillCircle(cx - 5 + i * 0.5, 14 + i, 0.7);
     g.fillCircle(cx + 5 - i * 0.5, 14 + i, 0.7);
   }
   // smile
-  g.lineStyle(1.4, PAL.manateeDark, 0.9);
+  g.lineStyle(1.4, colors.dark, 0.9);
   g.beginPath();
   g.arc(cx, 12.5, 4.5, 0.25 * Math.PI, 0.75 * Math.PI, false);
   g.strokePath();
@@ -100,18 +105,24 @@ function makeManatee(scene: Phaser.Scene, key: string, tailSwing: number) {
   g.fillCircle(cx + 6.6, 18.4, 0.9);
 
   // blush
-  g.fillStyle(PAL.manateeBlush, 0.35);
+  g.fillStyle(colors.blush, 0.35);
   g.fillEllipse(cx - 11, 23, 6, 4);
   g.fillEllipse(cx + 11, 23, 6, 4);
 
   // top rim light
-  g.lineStyle(2, PAL.manateeBelly, 0.5);
+  // Layered rim light and lower-body shade make the character read as a
+  // rounded 3D form while retaining the game's friendly illustrated style.
+  g.lineStyle(3, colors.belly, 0.58);
   g.beginPath();
   g.arc(cx, h / 2 - 3, w * 0.36, 1.05 * Math.PI, 1.85 * Math.PI, false);
   g.strokePath();
+  g.fillStyle(colors.dark, 0.14);
+  g.fillEllipse(cx + 3, h / 2 + 8, w * 0.55, h * 0.28);
+  g.fillStyle(PAL.white, 0.22);
+  g.fillEllipse(cx - 7, 20, 8, 18);
 
   // outline
-  g.lineStyle(2, PAL.manateeDark, 0.9);
+  g.lineStyle(2, colors.dark, 0.9);
   g.strokeEllipse(cx, h / 2 - 3, w * 0.78, h * 0.8);
 
   done(g, key, w, h + 6);
@@ -554,10 +565,34 @@ function makePanel(scene: Phaser.Scene) {
 /* ---------------------------------------------------------------- entry point */
 
 export function buildAllTextures(scene: Phaser.Scene) {
-  // Manatee swim cycle: three tail positions.
-  makeManatee(scene, "manatee", 0);
-  makeManatee(scene, "manatee-swim-1", -4);
-  makeManatee(scene, "manatee-swim-2", 4);
+  // Three dimensional character variations, each with a swim cycle.
+  const variants = {
+    manny: {
+      body: PAL.manatee,
+      dark: PAL.manateeDark,
+      belly: PAL.manateeBelly,
+      blush: PAL.manateeBlush,
+    },
+    coral: {
+      body: 0xb7a9a0,
+      dark: 0x766862,
+      belly: 0xeadbd1,
+      blush: 0xf08f83,
+    },
+    sage: {
+      body: 0x91aaa3,
+      dark: 0x536e69,
+      belly: 0xd5e6dd,
+      blush: 0xe6a09b,
+    },
+  };
+  for (const [name, colors] of Object.entries(variants)) {
+    makeManatee(scene, `manatee-${name}`, 0, colors);
+    makeManatee(scene, `manatee-${name}-swim-1`, -4, colors);
+    makeManatee(scene, `manatee-${name}-swim-2`, 4, colors);
+  }
+  // Kept for HUD icons and backwards-compatible texture lookups.
+  makeManatee(scene, "manatee", 0, variants.manny);
 
   makeBoats(scene);
   makeLettuce(scene);

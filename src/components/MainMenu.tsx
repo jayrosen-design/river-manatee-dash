@@ -9,10 +9,14 @@ interface Props {
 }
 
 const FEATURES: { Icon: LucideIcon; title: string; sub: string }[] = [
-  { Icon: Leaf, title: "Collect Food", sub: `Lettuce ${FOOD_SCORE.lettuce} · Fish ${FOOD_SCORE.fish}` },
+  {
+    Icon: Leaf,
+    title: "Collect Food",
+    sub: `Lettuce ${FOOD_SCORE.lettuce} · Fish ${FOOD_SCORE.fish}`,
+  },
   { Icon: Ship, title: "Avoid Boats", sub: "Stay safe in the lanes" },
-  { Icon: Waves, title: "Dodge Hazards", sub: "Propellers & jellyfish" },
-  { Icon: Heart, title: "3 Manatees", sub: "Can you clear the maze?" },
+  { Icon: Waves, title: "3 River Courses", sub: "New routes, hazards & coves" },
+  { Icon: Heart, title: "3 Manatees", sub: "Meet Manny, Coral & Sage" },
 ];
 
 export function MainMenu({ onPlay }: Props) {
@@ -56,8 +60,8 @@ export function MainMenu({ onPlay }: Props) {
             </span>
           </div>
           <p className="mt-5 text-river-foam/85 text-sm sm:text-base max-w-md mx-auto lg:mx-0">
-            Guide Manny through the floating rope maze of the springs, feast on
-            every lettuce, shrimp and fish, and slip past the boats.
+            Guide three manatee friends through dimensional river courses, collect every feast, and
+            time your dash past the boats.
           </p>
 
           <div className="mt-7 flex flex-col gap-3 items-stretch max-w-xs mx-auto lg:mx-0">
@@ -66,7 +70,7 @@ export function MainMenu({ onPlay }: Props) {
               className="press-pop px-6 py-3.5 rounded-2xl bg-river-lettuce text-river-navy font-black text-lg tracking-wide shadow-[0_8px_0_var(--river-seaweed)] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[0_4px_0_var(--river-seaweed)] focus:outline-none focus:ring-4 focus:ring-river-lettuce/40"
             >
               <span className="inline-flex items-center justify-center gap-2">
-                <Play className="h-5 w-5 fill-current" /> PLAY ARCADE
+                <Play className="h-5 w-5 fill-current" /> START CAMPAIGN
               </span>
             </button>
             <div className="flex gap-3">
@@ -80,11 +84,7 @@ export function MainMenu({ onPlay }: Props) {
                 onClick={toggleMute}
                 className="press-pop px-4 py-2.5 rounded-xl bg-river-navy/70 hover:bg-river-navy text-river-foam text-sm border border-river-foam/15 focus:outline-none focus:ring-2 focus:ring-river-foam/40"
               >
-                {muted ? (
-                  <VolumeX className="h-4 w-4" />
-                ) : (
-                  <Volume2 className="h-4 w-4" />
-                )}
+                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
               </button>
             </div>
           </div>
@@ -114,9 +114,7 @@ export function MainMenu({ onPlay }: Props) {
                 <div className="font-black uppercase tracking-wide text-sm text-river-foam">
                   {f.title}
                 </div>
-                <div className="text-xs text-river-lettuce/90 font-semibold">
-                  {f.sub}
-                </div>
+                <div className="text-xs text-river-lettuce/90 font-semibold">{f.sub}</div>
               </div>
             </div>
           ))}

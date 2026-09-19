@@ -1,11 +1,5 @@
 import { COLS, ROWS } from "../constants";
-import type {
-  FoodSpec,
-  JellySpec,
-  LevelData,
-  TileType,
-  Waypoint,
-} from "./types";
+import type { FoodSpec, JellySpec, LevelData, TileType, Waypoint } from "./types";
 
 // Build a maze procedurally so it's easy to tweak.
 // Strategy:
@@ -183,16 +177,22 @@ function build(): LevelData {
   exclude.add(`${playerSpawn.c + 1},${playerSpawn.r}`);
   exclude.add(`${playerSpawn.c},${playerSpawn.r + 1}`);
   for (let dr = -1; dr <= 1; dr++)
-    for (let dc = -1; dc <= 1; dc++)
-      exclude.add(`${propeller.c + dc},${propeller.r + dr}`);
+    for (let dc = -1; dc <= 1; dc++) exclude.add(`${propeller.c + dc},${propeller.r + dr}`);
   decorativeDebris.forEach((d) => exclude.add(`${d.c},${d.r}`));
   jellyfish.forEach((j) => exclude.add(`${j.c},${j.r}`));
   decor.rocks.forEach((d) => exclude.add(`${d.c},${d.r}`));
   decor.reeds.forEach((d) => exclude.add(`${d.c},${d.r}`));
 
   return {
+    id: "classic",
+    name: "Classic Springs",
+    subtitle: "The original river course",
+    difficulty: 2,
+    characterVariant: "manny",
     cols: COLS,
     rows: ROWS,
+    zones: [{ index: 0, name: "Classic Springs", c0: 0, c1: COLS - 1 }],
+    gates: [],
     grid,
     playerSpawn,
     foods: buildFoods(grid, exclude),
