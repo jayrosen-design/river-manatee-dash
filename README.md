@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23422046.svg)](https://doi.org/10.5281/zenodo.23422046)
+
 # River Manatee
 
 A 3D Florida-springs arcade game. Swim a manatee through rope channels, feast on floating food, and time your dash past motor boats. Built with React 19, TypeScript, TanStack Start (Vite), Three.js, and Tailwind CSS v4.
